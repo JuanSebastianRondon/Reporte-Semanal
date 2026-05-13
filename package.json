@@ -1,0 +1,44 @@
+{
+  "name": "reporte_semanal",
+  "version": "1.0.0",
+  "main": "index.js",
+  "bin": "dist/main.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/main",
+    "start:dev": "ts-node -r tsconfig-paths/register src/main.ts",
+    "start:all": "concurrently \"node tracker.js\" \"npm run start:dev\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@nestjs/common": "^11.1.16",
+    "@nestjs/core": "^11.1.16",
+    "@nestjs/platform-express": "^11.1.16",
+    "@nestjs/schedule": "^6.1.1",
+    "active-win": "^9.0.0",
+    "dotenv": "^17.3.1",
+    "node-schedule": "^2.1.1",
+    "nodemailer": "^8.0.2",
+    "pdfkit": "^0.18.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/nodemailer": "^7.0.11",
+    "@types/pdfkit": "^0.17.5",
+    "concurrently": "^9.2.1",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.7.3"
+  },
+  "pkg": {
+  "entrypoint": "dist/main.js",
+  "targets": ["node20-win-x64"],
+  "outputPath": "build"
+  }
+
+}
