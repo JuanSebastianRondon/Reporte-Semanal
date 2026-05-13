@@ -16,32 +16,17 @@ npm install -g pm2
 ```
  
 ---
+## Instalación en Windows
  
-## Instalación
- 
-1. Clona el repositorio o descarga el código fuente.
-2. Instala las dependencias:
-```
-npm install
-```
- 
-3. Crea un archivo `.env` en la raíz del proyecto con tus credenciales:
-```
-EMAIL_USER=tucorreo@gmail.com
-EMAIL_PASS=tucontraseñadeaplicacion
-```
- 
-4. Compila el proyecto:
-```
-npm run build
-```
- 
-5. Inicia el programa con pm2:
-```
-pm2 start dist/main.js --name reporte-semanal
-pm2 save
-```
- 
+1. Ve a la sección [Releases](../../releases) del repositorio.
+2. Descarga `ReporteSemanal-Setup.exe` y ejecútalo con doble clic.
+3. Sigue el asistente de instalación.
+4. Al terminar, el configurador se abre automáticamente.
+5. Completa los campos:
+   - Correo Gmail
+   - Contraseña de aplicación
+   - Tipo de uso (arranque automático o temporal)
+6. Haz clic en **Instalar**.
 ---
  
 ## Cómo obtener la contraseña de aplicación de Gmail
@@ -86,7 +71,13 @@ pm2 save
 Ejecuta el comando que pm2 te indique después de `pm2 startup`.
  
 ---
+
+ ## Modificar la configuración
  
+Para cambiar el correo o la contraseña después de instalar, ejecuta de nuevo el `Reporte-semanal.exe` que quedó en la carpeta de instalación. Esto abre la ventana de configuración y sobreescribe los datos anteriores.
+ 
+---
+
 ## Tecnologías usadas
  
 - NestJS
