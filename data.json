@@ -1,15 +1,4 @@
 {
-  "apps": {
-    "Visual Studio Code": 665,
-    "Vivaldi": 785,
-    "SnippingTool.exe": 5,
-    "YouTube Music": 495,
-    "Explorador de Windows": 75,
-    "Windows Terminal Host": 260,
-    "OneCommander": 40,
-    "Brave Browser": 5,
-    "WhatsApp.Root": 15,
-    "MSYS2 terminal": 45
-  },
-  "totalSeconds": 2390
+  "apps": {},
+  "totalSeconds": 0
 }
