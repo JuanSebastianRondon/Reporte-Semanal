@@ -6,5 +6,5 @@ build/
 .report-sent
 Output/
 .vscode/
-instalador.iss
 .report-sent
+data.json
