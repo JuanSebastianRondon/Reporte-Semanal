@@ -122,7 +122,7 @@ $botonInstalar.Add_Click({
     }
 
     # Ruta del proyecto (misma carpeta que el .ps1)
-    $rutaProyecto = Split-Path -Parent $MyInvocation.ScriptName
+    $rutaProyecto = Split-Path -Parent $PSCommandPath
 
     # Generar .env
     $envContent = "EMAIL_USER=$correo`nEMAIL_PASS=$pass"
@@ -135,8 +135,9 @@ $botonInstalar.Add_Click({
 
     # Configurar pm2
     pm2 start dist/main.js --name reporte-semanal | Out-Null
+    pm2 start "$rutaProyecto\tracker.mjs" --name tracker | Out-Null
     pm2 save | Out-Null
-
+    
     if ($radioPersistente.Checked) {
     pm2 restart reporte-semanal | Out-Null
     [System.Windows.Forms.MessageBox]::Show("Instalacion completada. El programa arrancara automaticamente con Windows.", "Listo", "OK", "Information")
