@@ -15,7 +15,7 @@ PrivilegesRequired=lowest
 Name: "spanish"; MessagesFile: "compiler:Languages\Spanish.isl"
 
 [Files]
-Source: "*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion; Excludes: "*.git,node_modules,.env,*.log,.gitignore,instalador.iss"
+Source: "*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion; Excludes: "*.git,*node_modules,.env,*.log,.gitignore,instalador.iss, ejecutables.md, data.json,*.vscode,*dist,*build,.report-sent, *Output, instalar.bat, instalar.ps1"
 
 [Icons]
 Name: "{group}\Reporte Semanal"; Filename: "{app}\Reporte-semanal.exe"
