@@ -1,4 +1,4 @@
-import { activeWindow } from 'active-win';
+import { activeWindow } from 'get-windows';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';

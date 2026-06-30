@@ -119,10 +119,19 @@ $botonInstalar.Add_Click({
         return
     }
 
+    # El proyecto ya esta clonado, se trabaja en la misma carpeta del .ps1
     $rutaProyecto = Split-Path -Parent $PSCommandPath
 
+    # Generar .env
     $envContent = "EMAIL_USER=" + $correo + "`nEMAIL_PASS=" + $pass
     Set-Content -Path "$rutaProyecto\.env" -Value $envContent -NoNewline
+
+    # Generar data.json vacio si no existe
+    $dataPath = "$rutaProyecto\data.json"
+    if (-not (Test-Path $dataPath)) {
+        $dataInicial = '{"apps": {}, "totalSeconds": 0}'
+        Set-Content -Path $dataPath -Value $dataInicial -NoNewline
+    }
 
     Set-Location $rutaProyecto
     npm ci | Out-Null

@@ -18,10 +18,10 @@
     "@nestjs/core": "^11.1.16",
     "@nestjs/platform-express": "^11.1.16",
     "@nestjs/schedule": "^6.1.1",
-    "active-win": "^9.0.0",
     "dotenv": "^17.3.1",
+    "get-windows": "^9.3.0",
     "node-schedule": "^2.1.1",
-    "nodemailer": "^8.0.2",
+    "nodemailer": "^9.0.1",
     "pdfkit": "^0.18.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2"
@@ -36,9 +36,10 @@
     "typescript": "^5.7.3"
   },
   "pkg": {
-  "entrypoint": "dist/main.js",
-  "targets": ["node20-win-x64"],
-  "outputPath": "build"
+    "entrypoint": "dist/main.js",
+    "targets": [
+      "node20-win-x64"
+    ],
+    "outputPath": "build"
   }
-
 }
