@@ -32,4 +32,4 @@
 ::
 ::978f952a14a936cc963da21a135fa983
 @echo off
-powershell -ExecutionPolicy Bypass -File "%~dp0instalar.ps1"
+powershell -ExecutionPolicy Bypass -File "%~dp0setup.ps1"
