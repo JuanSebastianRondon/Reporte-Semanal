@@ -3,13 +3,14 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { MailModule } from './mail/mail.module';
 import { MetricsModule } from './metrics/metrics.module';
 import { ReportsModule } from './reports/reports.module';
-
+import { StatusModule } from './status/status.module';
 @Module({
   imports: [
     ScheduleModule.forRoot(),
     MailModule,
     MetricsModule,
     ReportsModule,
+    StatusModule,
   ],
 })
 export class AppModule {}

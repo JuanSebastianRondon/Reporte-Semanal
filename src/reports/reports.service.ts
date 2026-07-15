@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as os from 'os';
 import { MailService } from '../mail/mail.service';
 import { MetricsService } from '../metrics/metrics.service';
 import { generatePDF } from './templates/pdf.template';
@@ -8,17 +9,18 @@ import { generatePDF } from './templates/pdf.template';
 @Injectable()
 export class ReportsService implements OnModuleInit {
   private readonly logger = new Logger(ReportsService.name);
-  private readonly FLAG_FILE = path.join(process.cwd(), '.report-sent');
+  private readonly appDir = path.join(os.homedir(), 'AppData', 'Roaming', 'ReporteSemanal');
+  private readonly FLAG_FILE = path.join(this.appDir, '.report-sent');
+  private readonly dataPath = path.join(this.appDir, 'data.json');
 
   constructor(
     private readonly mailService: MailService,
     private readonly metricsService: MetricsService,
   ) {}
 
-  // Se ejecuta cada vez que la app inicia
   async onModuleInit() {
     const today = new Date();
-    const isMonday = today.getDay() === 1; // 0=domingo, 1=lunes
+    const isMonday = today.getDay() === 1;
     const alreadySent = this.checkIfAlreadySent();
 
     if (isMonday && !alreadySent) {
@@ -32,9 +34,14 @@ export class ReportsService implements OnModuleInit {
     const today = new Date().toDateString();
     return lastSent === today;
   }
+  
+   getLastReportSentAt(): string | null {
+    if (!fs.existsSync(this.FLAG_FILE)) return null;
+    return fs.readFileSync(this.FLAG_FILE, 'utf-8');
+  }
 
   async sendWeeklyReport(): Promise<void> {
-    this.logger.log(' Generando reporte semanal...');
+    this.logger.log('Generando reporte semanal...');
 
     const metrics = this.metricsService.getWeeklyMetrics();
     const pdfPath = await generatePDF(metrics);
@@ -42,13 +49,11 @@ export class ReportsService implements OnModuleInit {
 
     fs.unlinkSync(pdfPath);
 
-    // Marca que ya se envió hoy
     fs.writeFileSync(this.FLAG_FILE, new Date().toDateString());
 
-    // Reinicia data.json para la nueva semana
-    const dataPath = path.join(process.cwd(), 'data.json');
-    fs.writeFileSync(dataPath, JSON.stringify({ apps: {}, totalSeconds: 0 }, null, 2));
+    fs.writeFileSync(this.dataPath, JSON.stringify({ apps: {}, totalSeconds: 0 }, null, 2));
 
     this.logger.log('Reporte enviado y datos reiniciados');
   }
+ 
 }

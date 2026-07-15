@@ -1,13 +1,25 @@
 import * as dotenv from 'dotenv';
-dotenv.config();
+import {spawn} from 'child_process';
+import * as path from 'path'; 
+import * as os from 'os';
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
 
+import { AppModule } from './app.module';
+import { ensureSingleInstance } from './single-instance';
+
+dotenv.config();
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
-    logger: ['error', 'warn'], // solo loguea errores y warnings
-  });
-  await app.listen(3000);
+  const appDir = path.join(os.homedir(), 'AppData', 'Roaming', 'ReporteSemanal');
+  ensureSingleInstance(appDir);
+
+  dotenv.config({ path: path.join(appDir, '.env') });
 }
+const trayPath = path.join(path.dirname(process.execPath), 'tray.exe');
+spawn(trayPath, [], {
+  detached: false,
+  stdio: 'ignore',
+});
 bootstrap();
+
+

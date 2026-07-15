@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <AssemblyName>ReporteTray</AssemblyName>
+    <Nullable>disable</Nullable>
+    <!-- Descomenta cuando tengas un .ico propio en esta carpeta:
+    <ApplicationIcon>app.ico</ApplicationIcon>
+    -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- JavaScriptSerializer para parsear JSON sin depender de NuGet -->
+    <Reference Include="System.Web.Extensions" />
+  </ItemGroup>
+
+</Project>

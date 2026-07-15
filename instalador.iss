@@ -1,29 +1,18 @@
 [Setup]
-AppName=Reporte Semanal de Productividad
-AppVersion=1.0.1
-AppPublisher=Juan Sebastian Rondon
-DefaultDirName={userappdata}\ReporteSemanal
-DefaultGroupName=Reporte Semanal
-OutputBaseFilename=ReporteSemanal-Setup
-SetupIconFile=.\images\icon.ico
-Compression=lzma
-SolidCompression=yes
-WizardStyle=modern
 PrivilegesRequired=lowest
-
-[Languages]
-Name: "spanish"; MessagesFile: "compiler:Languages\Spanish.isl"
+DefaultDirName={userappdata}\ReporteSemanal
+DisableDirPage=yes
 
 [Files]
-Source: "*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion; Excludes: "*.git,*node_modules,.env,*.log,.gitignore,instalador.iss, ejecutables.md, data.json,*.vscode,*dist,*build,.report-sent, *Output, instalar.bat, instalar.ps1"
+Source: "dist\*"; DestDir: "{app}\dist"; Flags: recursesubdirs ignoreversion
+Source: "node_modules\*"; DestDir: "{app}\node_modules"; Flags: recursesubdirs ignoreversion
+Source: "runtime\node.exe"; DestDir: "{app}\runtime"; Flags: ignoreversion
+Source: "runtime\ReporteTray.exe"; DestDir: "{app}\runtime"; Flags: ignoreversion
+Source: "setup.ps1"; DestDir: "{app}"; Flags: ignoreversion
 
-[Icons]
-Name: "{group}\Reporte Semanal"; Filename: "{app}\Reporte-semanal.exe"
-Name: "{commondesktop}\Reporte Semanal"; Filename: "{app}\Reporte-semanal.exe"
+[Registry]
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "ReporteSemanal"; ValueData: """{app}\runtime\node.exe"" ""{app}\dist\main.js"""
 
 [Run]
-Filename: "powershell.exe"; Parameters: "-ExecutionPolicy Bypass -File ""{app}\instalar.ps1"""; Description: "Configurar ahora"; Flags: postinstall nowait skipifsilent
-
-[UninstallRun]
-Filename: "cmd.exe"; Parameters: "/c pm2 delete reporte-semanal && pm2 delete tracker && pm2 save"; Flags: runhidden; RunOnceId: "DetenerPM2"
-Filename: "powershell.exe"; Parameters: "-ExecutionPolicy Bypass -Command ""Remove-Item -Recurse -Force '{app}\node_modules', '{app}\.env', '{app}\data.json' -ErrorAction SilentlyContinue"""; Flags: runhidden; RunOnceId: "LimpiarArchivos"
+Filename: "powershell.exe"; Parameters: "-ExecutionPolicy Bypass -File ""{app}\setup.ps1"" -AppDir ""{app}"""; Flags: runhidden waituntilterminated
+Filename: "{app}\runtime\node.exe"; Parameters: "{app}\dist\main.js"; Flags: runhidden nowait

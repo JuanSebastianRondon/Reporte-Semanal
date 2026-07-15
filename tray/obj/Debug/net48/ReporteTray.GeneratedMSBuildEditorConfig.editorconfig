@@ -1,0 +1,14 @@
+is_global = true
+build_property.ApplicationManifest = 
+build_property.StartupObject = 
+build_property.ApplicationDefaultFont = 
+build_property.ApplicationHighDpiMode = 
+build_property.ApplicationUseCompatibleTextRendering = 
+build_property.ApplicationVisualStyles = 
+build_property.RootNamespace = ReporteTray
+build_property.ProjectDir = C:\Users\JUAN SEBASTIAN\OneDrive\Documentos\Talleres\2026\Reporte_semanal\tray\
+build_property.EnableComHosting = 
+build_property.EnableGeneratedComInterfaceComImportInterop = 
+build_property.CsWinRTUseWindowsUIXamlProjections = false
+build_property.EffectiveAnalysisLevelStyle = 
+build_property.EnableCodeStyleSeverity = 
