@@ -6,7 +6,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>Launcher</AssemblyName>
     <Nullable>disable</Nullable>
-    <ApplicationIcon>../images/encendido.ico</ApplicationIcon>
+    <ApplicationIcon>../images/icon.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>

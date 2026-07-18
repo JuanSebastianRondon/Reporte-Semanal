@@ -6,7 +6,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>ReporteTray</AssemblyName>
     <Nullable>disable</Nullable>
-    <ApplicationIcon>../images/icon.ico</ApplicationIcon>
+    <ApplicationIcon>../images/cronometro.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>

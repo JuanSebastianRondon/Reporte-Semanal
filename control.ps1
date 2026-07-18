@@ -84,7 +84,7 @@ $boton.Add_Click({
             [System.Windows.Forms.MessageBox]::Show("Programa encendido.", "Listo", "OK", "Information")
         } else {
             [System.Windows.Forms.MessageBox]::Show(
-                "No se encontró ReporteSemanal.exe en esta carpeta.",
+                "No se encontro ReporteSemanal.exe en esta carpeta.",
                 "Error", "OK", "Error"
             )
         }

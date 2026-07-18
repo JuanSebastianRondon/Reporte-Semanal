@@ -14,8 +14,12 @@ namespace ReporteTray
         private readonly Timer _pollTimer;
         private readonly HttpClient _http;
 
+        private readonly System.Drawing.Icon _appIcon;
+
         public TrayApplicationContext()
         {
+            _appIcon = System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath);
+
             _http = new HttpClient { Timeout = TimeSpan.FromSeconds(3) };
 
             var menu = new ContextMenuStrip();
@@ -26,13 +30,13 @@ namespace ReporteTray
 
             _trayIcon = new NotifyIcon
             {
-                Icon = System.Drawing.SystemIcons.Application, // TODO: reemplazar por icono propio
+                Icon = _appIcon,
                 ContextMenuStrip = menu,
                 Visible = true,
                 Text = "Reporte Semanal de Productividad"
             };
 
-            _pollTimer = new Timer { Interval = 5000 };
+            _pollTimer = new System.Windows.Forms.Timer { Interval = 5000 };
             _pollTimer.Tick += async (s, e) => await PollStatusAsync();
             _pollTimer.Start();
 
@@ -47,7 +51,7 @@ namespace ReporteTray
                 var serializer = new JavaScriptSerializer();
                 var data = serializer.Deserialize<StatusResponse>(response);
 
-                _trayIcon.Icon = System.Drawing.SystemIcons.Application;
+                _trayIcon.Icon = _appIcon;
                 _trayIcon.Text = TrimTooltip(
                     $"Esta semana: {data.weekTotal}\nÚltimo reporte: {data.lastReportSentAt ?? "sin enviar aún"}"
                 );
