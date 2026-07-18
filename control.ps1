@@ -3,6 +3,11 @@ Add-Type -AssemblyName System.Drawing
 
 $ApiUrl = "http://localhost:4577"
 
+$AppDir = $PSScriptRoot
+if ([string]::IsNullOrEmpty($AppDir)) {
+    $AppDir = Split-Path -Parent ([System.Diagnostics.Process]::GetCurrentProcess().MainModule.FileName)
+}
+
 function Test-BackendRunning {
     try {
         Invoke-RestMethod -Uri "$ApiUrl/status" -TimeoutSec 2 -ErrorAction Stop | Out-Null
@@ -78,13 +83,13 @@ $boton.Add_Click({
             )
         }
     } else {
-        $launcher = Join-Path $PSScriptRoot "Launcher.exe"
+        $launcher = Join-Path $AppDir "Launcher.exe"
         if (Test-Path $launcher) {
             Start-Process -FilePath $launcher
             [System.Windows.Forms.MessageBox]::Show("Programa encendido.", "Listo", "OK", "Information")
         } else {
             [System.Windows.Forms.MessageBox]::Show(
-                "No se encontro ReporteSemanal.exe en esta carpeta.",
+                "No se encontro Launcher.exe en esta carpeta.",
                 "Error", "OK", "Error"
             )
         }
@@ -93,4 +98,5 @@ $boton.Add_Click({
 })
 
 $form.Controls.Add($boton)
+$form.AcceptButton = $boton
 $form.ShowDialog() | Out-Null
