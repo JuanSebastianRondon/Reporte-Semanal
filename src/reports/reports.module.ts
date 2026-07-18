@@ -8,5 +8,6 @@ import { MetricsModule } from '../metrics/metrics.module';
   imports: [MailModule, MetricsModule],
   controllers: [ReportsController],
   providers: [ReportsService],
+  exports: [ReportsService],
 })
 export class ReportsModule {}

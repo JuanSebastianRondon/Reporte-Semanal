@@ -9,3 +9,7 @@ Output/
 .report-sent
 data.json
 ejecutables.md
+.lock
+bin/
+obj/
+.vs/

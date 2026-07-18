@@ -1,12 +1,17 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import * as os from 'os';
 import { WeeklyMetrics } from '../../metrics/metrics.service';
 const PDFDocument = require('pdfkit');
 
 export function generatePDF(metrics: WeeklyMetrics): Promise<string> {
   return new Promise((resolve, reject) => {
     const doc: typeof PDFDocument = new PDFDocument({ margin: 50 });
-    const filePath = path.join(process.cwd(), `report-${Date.now()}.pdf`);
+
+    const dir = path.join(os.homedir(), 'AppData', 'Roaming', 'ReporteSemanal');
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+
+    const filePath = path.join(dir, `report-${Date.now()}.pdf`);
     const stream = fs.createWriteStream(filePath);
 
     doc.pipe(stream);
@@ -46,26 +51,23 @@ export function generatePDF(metrics: WeeklyMetrics): Promise<string> {
     topApps.forEach((app, i) => {
       const rowY = doc.y;
 
-      // Nombre
       doc
         .fontSize(11)
         .fillColor('#111827')
         .text(`${i + 1}. ${app.name}`, 50, rowY, { lineBreak: false });
 
-      // tiempo en horas y minutos
       const horas = (app.minutes / 60).toFixed(1);
 
       doc
         .fontSize(10)
         .fillColor('#6b7280')
         .text(`${app.minutes} min (${horas}h)`, 420, rowY, { lineBreak: false });
-        // Barra solo si tiene minutos
-        if (app.minutes > 0) {
-          const barWidth = (app.minutes / maxMinutes) * 280;
-          doc.rect(50, rowY + 16, barWidth, 8).fill(colors[i]);
+
+      if (app.minutes > 0) {
+        const barWidth = (app.minutes / maxMinutes) * 280;
+        doc.rect(50, rowY + 16, barWidth, 8).fill(colors[i]);
       }
 
-      // Avance al siguiente row con espacio suficiente
       doc.y = rowY + 32;
     });
 
