@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\JUAN SEBASTIAN\\OneDrive\\Documentos\\Talleres\\2026\\Reporte_semanal\\tray\\ReporteTray.csproj": {}
+    "c:\\Users\\JUAN SEBASTIAN\\OneDrive\\Documentos\\Talleres\\2026\\Reporte_semanal\\tray\\ReporteTray.csproj": {}
   },
   "projects": {
-    "C:\\Users\\JUAN SEBASTIAN\\OneDrive\\Documentos\\Talleres\\2026\\Reporte_semanal\\tray\\ReporteTray.csproj": {
+    "c:\\Users\\JUAN SEBASTIAN\\OneDrive\\Documentos\\Talleres\\2026\\Reporte_semanal\\tray\\ReporteTray.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\JUAN SEBASTIAN\\OneDrive\\Documentos\\Talleres\\2026\\Reporte_semanal\\tray\\ReporteTray.csproj",
+        "projectUniqueName": "c:\\Users\\JUAN SEBASTIAN\\OneDrive\\Documentos\\Talleres\\2026\\Reporte_semanal\\tray\\ReporteTray.csproj",
         "projectName": "ReporteTray",
-        "projectPath": "C:\\Users\\JUAN SEBASTIAN\\OneDrive\\Documentos\\Talleres\\2026\\Reporte_semanal\\tray\\ReporteTray.csproj",
+        "projectPath": "c:\\Users\\JUAN SEBASTIAN\\OneDrive\\Documentos\\Talleres\\2026\\Reporte_semanal\\tray\\ReporteTray.csproj",
         "packagesPath": "C:\\Users\\JUAN SEBASTIAN\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\JUAN SEBASTIAN\\OneDrive\\Documentos\\Talleres\\2026\\Reporte_semanal\\tray\\obj\\",
+        "outputPath": "c:\\Users\\JUAN SEBASTIAN\\OneDrive\\Documentos\\Talleres\\2026\\Reporte_semanal\\tray\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

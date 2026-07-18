@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\JUAN SEBASTIAN\\OneDrive\\Documentos\\Talleres\\2026\\Reporte_semanal\\launcher\\ReporteLauncher.csproj": {}
+    "c:\\Users\\JUAN SEBASTIAN\\OneDrive\\Documentos\\Talleres\\2026\\Reporte_semanal\\launcher\\ReporteLauncher.csproj": {}
   },
   "projects": {
-    "C:\\Users\\JUAN SEBASTIAN\\OneDrive\\Documentos\\Talleres\\2026\\Reporte_semanal\\launcher\\ReporteLauncher.csproj": {
+    "c:\\Users\\JUAN SEBASTIAN\\OneDrive\\Documentos\\Talleres\\2026\\Reporte_semanal\\launcher\\ReporteLauncher.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\JUAN SEBASTIAN\\OneDrive\\Documentos\\Talleres\\2026\\Reporte_semanal\\launcher\\ReporteLauncher.csproj",
+        "projectUniqueName": "c:\\Users\\JUAN SEBASTIAN\\OneDrive\\Documentos\\Talleres\\2026\\Reporte_semanal\\launcher\\ReporteLauncher.csproj",
         "projectName": "Launcher",
-        "projectPath": "C:\\Users\\JUAN SEBASTIAN\\OneDrive\\Documentos\\Talleres\\2026\\Reporte_semanal\\launcher\\ReporteLauncher.csproj",
+        "projectPath": "c:\\Users\\JUAN SEBASTIAN\\OneDrive\\Documentos\\Talleres\\2026\\Reporte_semanal\\launcher\\ReporteLauncher.csproj",
         "packagesPath": "C:\\Users\\JUAN SEBASTIAN\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\JUAN SEBASTIAN\\OneDrive\\Documentos\\Talleres\\2026\\Reporte_semanal\\launcher\\obj\\",
+        "outputPath": "c:\\Users\\JUAN SEBASTIAN\\OneDrive\\Documentos\\Talleres\\2026\\Reporte_semanal\\launcher\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
