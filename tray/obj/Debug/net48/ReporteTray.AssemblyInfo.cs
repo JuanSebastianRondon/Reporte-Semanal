@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ReporteTray")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f30ee5f5837c941273bc747cbac38806b3136c3f")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4aab66a8594aa6a38230beb388320ee23f2298e4")]
 [assembly: System.Reflection.AssemblyProductAttribute("ReporteTray")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ReporteTray")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

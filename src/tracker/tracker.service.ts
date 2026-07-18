@@ -1,18 +1,14 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import * as fs from 'fs';
-import * as os from 'os';
 import * as path from 'path';
 
 @Injectable()
 export class TrackerService implements OnModuleInit {
-  private readonly dataDir = path.join(os.homedir(), 'AppData', 'Roaming', 'ReporteSemanal');
-  private readonly dataFile = path.join(this.dataDir, 'data.json');
-  public readonly flagfile = path.join(this.dataDir, '.report-sent');
-  
+  private readonly appDir  = path.join(__dirname, '..', '..');
+  private readonly dataFile = path.join(this.appDir, 'data.json');
+  public  readonly flagFile = path.join(this.appDir, '.report-sent');
+
   onModuleInit() {
-    if (!fs.existsSync(this.dataDir)) {
-      fs.mkdirSync(this.dataDir, { recursive: true });
-    }
     if (!fs.existsSync(this.dataFile)) {
       fs.writeFileSync(this.dataFile, JSON.stringify({ apps: {}, totalSeconds: 0 }));
     }

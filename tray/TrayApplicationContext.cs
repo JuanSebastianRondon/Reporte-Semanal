@@ -8,10 +8,10 @@ namespace ReporteTray
 {
     public class TrayApplicationContext : ApplicationContext
     {
-        private const string ApiBaseUrl = "http://127.0.0.1:4577";
+        private const string ApiBaseUrl = "http://localhost:4577";
 
         private readonly NotifyIcon _trayIcon;
-        private readonly System.Windows.Forms.Timer _pollTimer;
+        private readonly Timer _pollTimer;
         private readonly HttpClient _http;
 
         public TrayApplicationContext()
@@ -32,7 +32,7 @@ namespace ReporteTray
                 Text = "Reporte Semanal de Productividad"
             };
 
-            _pollTimer = new System.Windows.Forms.Timer { Interval = 5000 };
+            _pollTimer = new Timer { Interval = 5000 };
             _pollTimer.Tick += async (s, e) => await PollStatusAsync();
             _pollTimer.Start();
 
@@ -88,7 +88,9 @@ namespace ReporteTray
             }
             catch
             {
-                var fallback = Environment.ExpandEnvironmentVariables(@"%APPDATA%\ReporteSemanal");
+                var fallback = System.IO.Path.GetFullPath(
+                    System.IO.Path.Combine(Application.StartupPath, "..")
+                );
                 System.Diagnostics.Process.Start("explorer.exe", fallback);
             }
         }

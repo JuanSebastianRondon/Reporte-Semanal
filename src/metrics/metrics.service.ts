@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as os from 'os';
 
 export interface WeeklyMetrics {
   apps: { name: string; minutes: number }[];
@@ -10,7 +9,7 @@ export interface WeeklyMetrics {
 
 @Injectable()
 export class MetricsService {
-  private readonly dataPath = path.join(os.homedir(), 'AppData', 'Roaming', 'ReporteSemanal', 'data.json');
+  private readonly dataPath = path.join(__dirname, '..', '..', 'data.json');
 
   getWeeklyMetrics(): WeeklyMetrics {
     const raw = JSON.parse(fs.readFileSync(this.dataPath, 'utf-8'));

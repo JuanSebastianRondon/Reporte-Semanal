@@ -6,14 +6,14 @@
     <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>ReporteTray</AssemblyName>
     <Nullable>disable</Nullable>
-    <!-- Descomenta cuando tengas un .ico propio en esta carpeta:
-    <ApplicationIcon>app.ico</ApplicationIcon>
-    -->
+    <ApplicationIcon>../images/icon.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
     <!-- JavaScriptSerializer para parsear JSON sin depender de NuGet -->
     <Reference Include="System.Web.Extensions" />
+    <!-- HttpClient no se incluye por defecto en net48 con SDK-style csproj -->
+    <Reference Include="System.Net.Http" />
   </ItemGroup>
 
 </Project>

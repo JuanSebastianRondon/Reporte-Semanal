@@ -1,11 +1,18 @@
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
-# Verificar estado de pm2
-$estadoReporte = pm2 describe reporte-semanal 2>$null | Select-String "online"
-$estadoTracker = pm2 describe tracker 2>$null | Select-String "online"
+$ApiUrl = "http://localhost:4577"
 
-$corriendo = ($null -ne $estadoReporte) -or ($null -ne $estadoTracker)
+function Test-BackendRunning {
+    try {
+        Invoke-RestMethod -Uri "$ApiUrl/status" -TimeoutSec 2 -ErrorAction Stop | Out-Null
+        return $true
+    } catch {
+        return $false
+    }
+}
+
+$corriendo = Test-BackendRunning
 
 # ── Ventana ──────────────────────────────────────────────
 $form = New-Object System.Windows.Forms.Form
@@ -61,16 +68,29 @@ if ($corriendo) {
 
 $boton.Add_Click({
     if ($corriendo) {
-        pm2 stop reporte-semanal | Out-Null
-        pm2 stop tracker | Out-Null
-        [System.Windows.Forms.MessageBox]::Show("Programa apagado.", "Listo", "OK", "Information")
+        try {
+            Invoke-RestMethod -Uri "$ApiUrl/app/quit" -Method Post -TimeoutSec 3 -ErrorAction Stop | Out-Null
+            [System.Windows.Forms.MessageBox]::Show("Programa apagado.", "Listo", "OK", "Information")
+        } catch {
+            [System.Windows.Forms.MessageBox]::Show(
+                "No se pudo apagar. Puede que ya estuviera detenido.",
+                "Aviso", "OK", "Warning"
+            )
+        }
     } else {
-        pm2 start reporte-semanal | Out-Null
-        pm2 start tracker | Out-Null
-        [System.Windows.Forms.MessageBox]::Show("Programa encendido.", "Listo", "OK", "Information")
+        $launcher = Join-Path $PSScriptRoot "Launcher.exe"
+        if (Test-Path $launcher) {
+            Start-Process -FilePath $launcher
+            [System.Windows.Forms.MessageBox]::Show("Programa encendido.", "Listo", "OK", "Information")
+        } else {
+            [System.Windows.Forms.MessageBox]::Show(
+                "No se encontró ReporteSemanal.exe en esta carpeta.",
+                "Error", "OK", "Error"
+            )
+        }
     }
     $form.Close()
 })
 
 $form.Controls.Add($boton)
-$form.ShowDialog()
+$form.ShowDialog() | Out-Null

@@ -1,7 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as os from 'os';
 import { MailService } from '../mail/mail.service';
 import { MetricsService } from '../metrics/metrics.service';
 import { generatePDF } from './templates/pdf.template';
@@ -9,7 +8,7 @@ import { generatePDF } from './templates/pdf.template';
 @Injectable()
 export class ReportsService implements OnModuleInit {
   private readonly logger = new Logger(ReportsService.name);
-  private readonly appDir = path.join(os.homedir(), 'AppData', 'Roaming', 'ReporteSemanal');
+  private readonly appDir = path.join(__dirname, '..', '..');
   private readonly FLAG_FILE = path.join(this.appDir, '.report-sent');
   private readonly dataPath = path.join(this.appDir, 'data.json');
 
@@ -34,8 +33,8 @@ export class ReportsService implements OnModuleInit {
     const today = new Date().toDateString();
     return lastSent === today;
   }
-  
-   getLastReportSentAt(): string | null {
+
+  getLastSentDate(): string | null {
     if (!fs.existsSync(this.FLAG_FILE)) return null;
     return fs.readFileSync(this.FLAG_FILE, 'utf-8');
   }
@@ -45,15 +44,17 @@ export class ReportsService implements OnModuleInit {
 
     const metrics = this.metricsService.getWeeklyMetrics();
     const pdfPath = await generatePDF(metrics);
-    await this.mailService.sendReportEmail(pdfPath);
 
-    fs.unlinkSync(pdfPath);
+    try {
+      await this.mailService.sendReportEmail(pdfPath);
+    } finally {
+      // Borra el PDF pase lo que pase con el envío
+      if (fs.existsSync(pdfPath)) fs.unlinkSync(pdfPath);
+    }
 
     fs.writeFileSync(this.FLAG_FILE, new Date().toDateString());
-
     fs.writeFileSync(this.dataPath, JSON.stringify({ apps: {}, totalSeconds: 0 }, null, 2));
 
     this.logger.log('Reporte enviado y datos reiniciados');
   }
- 
 }
