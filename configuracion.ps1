@@ -8,6 +8,19 @@ if ([string]::IsNullOrEmpty($AppDir)) {
 
 $RegPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
 $RegName = "ReporteSemanal"
+$EnvPath = Join-Path $AppDir ".env"
+
+# Si ya existe un .env de una configuración anterior, precarga los valores
+# para que reconfigurar (por ejemplo, solo para cambiar el checkbox de
+# arranque automático) no obligue a volver a escribir la contraseña.
+$correoExistente = ""
+$passExistente = ""
+if (Test-Path $EnvPath) {
+    Get-Content $EnvPath | ForEach-Object {
+        if ($_ -match '^EMAIL_USER=(.*)$') { $correoExistente = $Matches[1] }
+        if ($_ -match '^EMAIL_PASS=(.*)$') { $passExistente = $Matches[1] }
+    }
+}
 
 # ── Ventana ──────────────────────────────────────────────
 $form = New-Object System.Windows.Forms.Form
@@ -40,6 +53,7 @@ $form.Controls.Add($labelCorreo)
 $inputCorreo = New-Object System.Windows.Forms.TextBox
 $inputCorreo.Size = New-Object System.Drawing.Size(300, 24)
 $inputCorreo.Location = New-Object System.Drawing.Point(20, 75)
+$inputCorreo.Text = $correoExistente
 $form.Controls.Add($inputCorreo)
 
 # ── Password de aplicacion ───────────────────────────────
@@ -56,6 +70,7 @@ $inputPass = New-Object System.Windows.Forms.TextBox
 $inputPass.Size = New-Object System.Drawing.Size(300, 24)
 $inputPass.Location = New-Object System.Drawing.Point(20, 130)
 $inputPass.UseSystemPasswordChar = $true
+$inputPass.Text = $passExistente
 $form.Controls.Add($inputPass)
 
 # ── Nota de ayuda ────────────────────────────────────────
@@ -79,7 +94,7 @@ $checkAutoStart.BackColor = [System.Drawing.Color]::Transparent
 $checkAutoStart.Size = New-Object System.Drawing.Size(300, 24)
 $checkAutoStart.Location = New-Object System.Drawing.Point(20, 225)
 $checkAutoStart.Checked = $true
-# Si ya existe la entrada de registro (por ejemplo, corriendo Configurar.exe
+# Si ya existe la entrada de registro (por ejemplo, corriendo Configuracion.exe
 # de nuevo para cambiar de opinion), refleja el estado real actual.
 if (-not (Test-Path $RegPath)) {
     New-Item -Path $RegPath -Force | Out-Null
@@ -113,7 +128,7 @@ $boton.Add_Click({
 
     $envContent = "EMAIL_USER=$correo`nEMAIL_PASS=$pass`n"
     [System.IO.File]::WriteAllText(
-        (Join-Path $AppDir ".env"),
+        $EnvPath,
         $envContent,
         (New-Object System.Text.UTF8Encoding($false))
     )

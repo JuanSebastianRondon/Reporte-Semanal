@@ -8,10 +8,10 @@
 ;   5. Configuracion.exe compilado con ps2exe en la raíz del proyecto
 
 [Setup]
-AppId={{B5D9A5C4-8F2C-4B1E-9C3D-CAMBIAR-ESTE-GUID}}
+AppId={{61834A1B-73C4-479D-BD57-DB124D2F29A9}}
 AppName=Reporte Semanal de Productividad
-AppVersion=1.0.0
-AppPublisher=Tu nombre o empresa
+AppVersion=2.0.0
+AppPublisher=Juanse
 DefaultDirName={userappdata}\ReporteSemanal
 DisableDirPage=yes
 DisableProgramGroupPage=yes
