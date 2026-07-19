@@ -5,13 +5,13 @@
 ;   3. Descargar node.exe portable x64 y ponerlo en runtime/node.exe
 ;   4. dotnet build -c Release en tray/    -> copiar el .exe resultante
 ;      a runtime/ReporteTray.exe
-;   5. setup.ps1 en la raíz del proyecto (mismo nivel que dist/, runtime/)
+;   5. Configuracion.exe compilado con ps2exe en la raíz del proyecto
 
 [Setup]
 AppId={{B5D9A5C4-8F2C-4B1E-9C3D-CAMBIAR-ESTE-GUID}}
 AppName=Reporte Semanal de Productividad
 AppVersion=1.0.0
-AppPublisher=Juanse
+AppPublisher=Tu nombre o empresa
 DefaultDirName={userappdata}\ReporteSemanal
 DisableDirPage=yes
 DisableProgramGroupPage=yes
@@ -20,6 +20,7 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 OutputDir=Output
 OutputBaseFilename=ReporteSemanal-Setup
+SetupIconFile=images\icon.ico
 Compression=lzma2
 SolidCompression=yes
 
@@ -28,24 +29,16 @@ Source: "dist\*"; DestDir: "{app}\dist"; Flags: recursesubdirs ignoreversion
 Source: "node_modules\*"; DestDir: "{app}\node_modules"; Flags: recursesubdirs ignoreversion
 Source: "runtime\node.exe"; DestDir: "{app}\runtime"; Flags: ignoreversion
 Source: "runtime\ReporteTray.exe"; DestDir: "{app}\runtime"; Flags: ignoreversion
-Source: "setup.ps1"; DestDir: "{app}"; Flags: ignoreversion
-
-[Registry]
-Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; \
-  ValueType: string; ValueName: "ReporteSemanal"; \
-  ValueData: """{app}\runtime\node.exe"" ""{app}\dist\main.js"""; \
-  Flags: uninsdeletevalue
+Source: "Launcher.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "control.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Configuracion.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 [Run]
-; Postinstall: pide correo + contraseña de aplicación, escribe .env y data.json
-Filename: "powershell.exe"; \
-  Parameters: "-ExecutionPolicy Bypass -File ""{app}\setup.ps1"" -AppDir ""{app}"""; \
-  Flags: runhidden waituntilterminated
-
-; Arranca el backend (que a su vez spawnea el tray) apenas termina el postinstall
-Filename: "{app}\runtime\node.exe"; \
-  Parameters: """{app}\dist\main.js"""; \
-  Flags: runhidden nowait
+; Postinstall: pide correo + contraseña de aplicación, escribe .env y data.json,
+; pregunta por arranque automático (escribe/borra el registro él mismo),
+; y arranca la app al final llamando a Launcher.exe
+Filename: "{app}\Configuracion.exe"; \
+  Flags: waituntilterminated
 
 [UninstallRun]
 ; Mata node.exe y el tray por ruta exacta, no por nombre, para no tocar
@@ -53,6 +46,13 @@ Filename: "{app}\runtime\node.exe"; \
 Filename: "powershell.exe"; \
   Parameters: "-ExecutionPolicy Bypass -Command ""Get-CimInstance Win32_Process | Where-Object {{ $_.ExecutablePath -eq '{app}\runtime\node.exe' -or $_.ExecutablePath -eq '{app}\runtime\ReporteTray.exe' } | ForEach-Object {{ Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue } """; \
   Flags: runhidden; RunOnceId: "MatarProcesos"
+
+; La entrada de registro la crea (o no) Configuracion.exe según el checkbox, no
+; queda registrada con uninsdeletevalue porque no hay [Registry] fijo.
+; Se borra aquí explícitamente, sin importar si existía o no.
+Filename: "reg.exe"; \
+  Parameters: "delete ""HKCU\Software\Microsoft\Windows\CurrentVersion\Run"" /v ReporteSemanal /f"; \
+  Flags: runhidden; RunOnceId: "BorrarRegistro"
 
 [UninstallDelete]
 ; {app} es la misma carpeta donde vive el .env, data.json, .lock y

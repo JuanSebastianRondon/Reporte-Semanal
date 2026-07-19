@@ -2,11 +2,17 @@ Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
 $AppDir = $PSScriptRoot
+if ([string]::IsNullOrEmpty($AppDir)) {
+    $AppDir = Split-Path -Parent ([System.Diagnostics.Process]::GetCurrentProcess().MainModule.FileName)
+}
+
+$RegPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
+$RegName = "ReporteSemanal"
 
 # ── Ventana ──────────────────────────────────────────────
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "Reporte Semanal - Configuracion inicial"
-$form.Size = New-Object System.Drawing.Size(360, 320)
+$form.Size = New-Object System.Drawing.Size(360, 360)
 $form.StartPosition = "CenterScreen"
 $form.FormBorderStyle = "FixedDialog"
 $form.MaximizeBox = $false
@@ -64,11 +70,29 @@ $labelNota.Size = New-Object System.Drawing.Size(320, 55)
 $labelNota.Location = New-Object System.Drawing.Point(20, 165)
 $form.Controls.Add($labelNota)
 
+# ── Checkbox de arranque automatico ─────────────────────
+$checkAutoStart = New-Object System.Windows.Forms.CheckBox
+$checkAutoStart.Text = "Iniciar automaticamente con Windows"
+$checkAutoStart.Font = New-Object System.Drawing.Font("Segoe UI", 9)
+$checkAutoStart.ForeColor = [System.Drawing.Color]::FromArgb(232, 238, 245)
+$checkAutoStart.BackColor = [System.Drawing.Color]::Transparent
+$checkAutoStart.Size = New-Object System.Drawing.Size(300, 24)
+$checkAutoStart.Location = New-Object System.Drawing.Point(20, 225)
+$checkAutoStart.Checked = $true
+# Si ya existe la entrada de registro (por ejemplo, corriendo Configurar.exe
+# de nuevo para cambiar de opinion), refleja el estado real actual.
+if (-not (Test-Path $RegPath)) {
+    New-Item -Path $RegPath -Force | Out-Null
+}
+$existing = Get-ItemProperty -Path $RegPath -Name $RegName -ErrorAction SilentlyContinue
+$checkAutoStart.Checked = $null -ne $existing
+$form.Controls.Add($checkAutoStart)
+
 # ── Boton guardar ────────────────────────────────────────
 $boton = New-Object System.Windows.Forms.Button
 $boton.Text = "Guardar y continuar"
 $boton.Font = New-Object System.Drawing.Font("Segoe UI", 10, [System.Drawing.FontStyle]::Bold)
-$boton.Location = New-Object System.Drawing.Point(20, 235)
+$boton.Location = New-Object System.Drawing.Point(20, 265)
 $boton.Size = New-Object System.Drawing.Size(300, 40)
 $boton.FlatStyle = "Flat"
 $boton.ForeColor = [System.Drawing.Color]::FromArgb(232, 238, 245)
@@ -94,21 +118,31 @@ $boton.Add_Click({
         (New-Object System.Text.UTF8Encoding($false))
     )
 
-    [System.IO.File]::WriteAllText(
-        (Join-Path $AppDir "data.json"),
-        '{"apps":{},"totalSeconds":0}',
-        (New-Object System.Text.UTF8Encoding($false))
-    )
+    $dataPath = Join-Path $AppDir "data.json"
+    if (-not (Test-Path $dataPath)) {
+        [System.IO.File]::WriteAllText(
+            $dataPath,
+            '{"apps":{},"totalSeconds":0}',
+            (New-Object System.Text.UTF8Encoding($false))
+        )
+    }
+
+    $launcherExe = Join-Path $AppDir "Launcher.exe"
+
+    if ($checkAutoStart.Checked) {
+        Set-ItemProperty -Path $RegPath -Name $RegName -Value "`"$launcherExe`"" -Force
+    } else {
+        Remove-ItemProperty -Path $RegPath -Name $RegName -ErrorAction SilentlyContinue
+    }
 
     [System.Windows.Forms.MessageBox]::Show(
         "Listo. La app ya puede enviar tu reporte cada lunes.",
         "Configuracion guardada", "OK", "Information"
     )
 
-    # Arranca el backend. Este a su vez lanza ReporteTray.exe automaticamente.
-    $nodeExe = Join-Path $AppDir "runtime\node.exe"
-    $mainJs  = Join-Path $AppDir "dist\main.js"
-    Start-Process -FilePath $nodeExe -ArgumentList "`"$mainJs`"" -WorkingDirectory $AppDir -WindowStyle Hidden
+    if (Test-Path $launcherExe) {
+        Start-Process -FilePath $launcherExe
+    }
 
     $form.Close()
 })
