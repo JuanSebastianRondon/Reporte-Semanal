@@ -1,11 +1,3 @@
-; Reporte Semanal de Productividad - Instalador
-; Requisitos previos antes de compilar este script:
-;   1. npm run build                      -> genera dist/
-;   2. npm prune --production             -> reduce node_modules
-;   3. Descargar node.exe portable x64 y ponerlo en runtime/node.exe
-;   4. dotnet build -c Release en tray/    -> copiar el .exe resultante
-;      a runtime/ReporteTray.exe
-;   5. Configuracion.exe compilado con ps2exe en la raíz del proyecto
 
 [Setup]
 AppId={{61834A1B-73C4-479D-BD57-DB124D2F29A9}}
@@ -34,30 +26,22 @@ Source: "control.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "Configuracion.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 [Run]
-; Postinstall: pide correo + contraseña de aplicación, escribe .env y data.json,
-; pregunta por arranque automático (escribe/borra el registro él mismo),
-; y arranca la app al final llamando a Launcher.exe
+
 Filename: "{app}\Configuracion.exe"; \
   Flags: waituntilterminated
 
 [UninstallRun]
-; Mata node.exe y el tray por ruta exacta, no por nombre, para no tocar
-; otros procesos node.exe que el usuario tenga corriendo en el sistema.
+
 Filename: "powershell.exe"; \
   Parameters: "-ExecutionPolicy Bypass -Command ""Get-CimInstance Win32_Process | Where-Object {{ $_.ExecutablePath -eq '{app}\runtime\node.exe' -or $_.ExecutablePath -eq '{app}\runtime\ReporteTray.exe' } | ForEach-Object {{ Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue } """; \
   Flags: runhidden; RunOnceId: "MatarProcesos"
 
-; La entrada de registro la crea (o no) Configuracion.exe según el checkbox, no
-; queda registrada con uninsdeletevalue porque no hay [Registry] fijo.
-; Se borra aquí explícitamente, sin importar si existía o no.
 Filename: "reg.exe"; \
   Parameters: "delete ""HKCU\Software\Microsoft\Windows\CurrentVersion\Run"" /v ReporteSemanal /f"; \
   Flags: runhidden; RunOnceId: "BorrarRegistro"
 
 [UninstallDelete]
-; {app} es la misma carpeta donde vive el .env, data.json, .lock y
-; .report-sent (instalación == carpeta de datos, según lo decidido).
-; Se borra todo. Esto incluye credenciales de correo, es intencional.
+
 Type: filesandordirs; Name: "{app}"
 
 [Code]
