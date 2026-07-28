@@ -23,8 +23,31 @@ export class ReportsService implements OnModuleInit {
     const alreadySent = this.checkIfAlreadySent();
 
     if (isMonday && !alreadySent) {
-      await this.sendWeeklyReport();
+      // Espera 30 segundos antes del primer intento para dar tiempo a que
+      // la red esté disponible al arrancar con Windows.
+      await this.delay(30000);
+      await this.trysenWeeklyReport();
     }
+  }
+
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  private async trysenWeeklyReport(intentos = 3): Promise<void> {
+    for (let i = 0; i < intentos; i++) {
+      try {
+        await this.sendWeeklyReport();
+        return;
+      } catch (err) {
+        this.logger.error(`Intento ${i + 1} de ${intentos} fallido: ${err.message}`);
+        if (i < intentos - 1) {
+          // Espera 5 minutos entre reintentos
+          await this.delay(5 * 60 * 1000);
+        }
+      }
+    }
+    this.logger.error('No se pudo enviar el reporte después de todos los intentos.');
   }
 
   private checkIfAlreadySent(): boolean {

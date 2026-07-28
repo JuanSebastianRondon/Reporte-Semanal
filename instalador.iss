@@ -2,7 +2,7 @@
 [Setup]
 AppId={{61834A1B-73C4-479D-BD57-DB124D2F29A9}}
 AppName=Reporte Semanal de Productividad
-AppVersion=2.0.0
+AppVersion=2.1.0
 AppPublisher=Juanse
 DefaultDirName={userappdata}\ReporteSemanal
 DisableDirPage=yes
@@ -28,6 +28,7 @@ Source: "Configuracion.exe"; DestDir: "{app}"; Flags: ignoreversion
 [Run]
 
 Filename: "{app}\Configuracion.exe"; \
+Description: "Configurar correo y opcioones de arranque"; \
   Flags: waituntilterminated
 
 [UninstallRun]
