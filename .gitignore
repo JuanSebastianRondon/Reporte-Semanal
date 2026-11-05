@@ -1,15 +1,18 @@
 node_modules/
 dist/
 build/
+Output/
 .env
 *.pdf
-.report-sent
-Output/
-.vscode/
+*.tmp
 .report-sent
 data.json
-ejecutables.md
 .lock
+
+# IDEs y herramientas
+.vscode/
+.vs/
 bin/
 obj/
-.vs/
+*/bin/
+*/obj/

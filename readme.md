@@ -2,13 +2,13 @@
 
 ![Versión](https://img.shields.io/badge/versi%C3%B3n-2.0.0-blue)
 ![Plataforma](https://img.shields.io/badge/plataforma-Windows-0078D6)
-![Lenguaje](https://img.shields.io/badge/lenguaje-TypeScript-3178C6)
+![Lenguaje](https://img.shields.io/badge/lenguaje-TypeScript%20%2F%20C%23-3178C6)
 ![Licencia](https://img.shields.io/badge/licencia-MIT-green)
 ![Release](https://img.shields.io/github/v/release/JuanSebastianRondon/Reporte-Semanal)
 
 Aplicación de escritorio para Windows que registra automáticamente el tiempo de uso de cada aplicación abierta en pantalla, genera un reporte semanal en PDF con ese historial, y lo envía por correo electrónico cada lunes de forma automática. Una vez configurado, el usuario no necesita hacer nada manualmente.
 
-El programa corre en segundo plano desde el arranque de Windows (si el usuario lo activa así), con un icono en la bandeja del sistema que permite ver el estado, generar un reporte manual, o apagar la app.
+El programa corre en segundo plano desde el arranque de Windows (si el usuario lo activa así), con un icono en la bandeja del sistema que permite ver el estado, generar un reporte manual, abrir la carpeta de datos o apagar la app.
 
 ---
 
@@ -53,16 +53,14 @@ Gmail no permite usar tu contraseña normal para enviar correos desde aplicacion
 5. Elige si quieres que la app arranque automáticamente con Windows.
 6. Guarda. La app arranca sola y verás el icono en la bandeja del sistema.
 
-Cada lunes, si la app estuvo corriendo, se genera el PDF con el resumen de la semana y se envía al correo configurado.
-
+Cada lunes, si la app está corriendo o al iniciar sesión, se genera el PDF con el resumen de la semana y se envía al correo configurado.
 
 ### Qué NO hace esta app
 
 - No soporta múltiples usuarios ni múltiples correos destino.
 - No tiene dashboard web ni interfaz gráfica de métricas más allá del PDF.
 - No soporta otros proveedores de correo distintos a Gmail (aunque `nodemailer` podría adaptarse con cambios en `mail.service.ts`).
-- El reporte solo se envía si el backend está corriendo el lunes. Si la máquina estuvo apagada ese día, el reporte de esa semana no se envía, en dado caso lo haría el siguiente lunes.
-- El ejecutable no está firmado con certificado de código, lo que podría generar alertas de Windows SmartScreen en algunas configuraciones.
+- No requiere permisos de administrador para instalarse ni ejecutarse.
 
 ---
 
@@ -71,24 +69,23 @@ Cada lunes, si la app estuvo corriendo, se genera el PDF con el resumen de la se
 ### Stack tecnológico
 
 **Backend (proceso principal)**
-- `Node.js` (runtime portable, sin instalación requerida en la máquina del usuario)
+- `Node.js` (runtime portable empacado en `runtime\node.exe`)
 - `NestJS` + `TypeScript`
 - `get-windows`: detección de la ventana activa cada 5 segundos
 - `pdfkit`: generación del reporte en PDF
 - `nodemailer`: envío del reporte por correo vía Gmail SMTP
 - `dotenv`: carga de credenciales desde `.env`
+- `@nestjs/schedule`: temporización automática y cron jobs
 
-**Frontend / UI**
-- C# / WinForms sobre .NET Framework 4.8 (preinstalado en Windows 10 y 11). Compilados con `dotnet build -c Release`
-- `ReporteTray.exe`: icono en la bandeja del sistema con menú contextual
-- `Launcher.exe`: punto de entrada, arranca el backend
-  Archivos Powershell compilados con `ps2exe`
-- `Configuracion.exe`: formulario de configuración inicial (correo, contraseña, autoarranque)
-- `control.exe`: ventana de encendido/apagado manual del servicio
-
+**Frontend / UI (C# nativo)**
+- C# / WinForms sobre .NET Framework 4.8 (100% nativo, sin dependencias externas):
+  - `ReporteTray.exe`: icono en la bandeja del sistema con menú contextual y tooltip de horas acumuladas
+  - `Launcher.exe`: punto de entrada que arranca el backend de forma segura
+  - `Configuracion.exe`: formulario nativo de configuración inicial (correo, contraseña, autoarranque)
+  - `control.exe`: ventana de encendido/apagado manual del servicio
 
 **Instalador**
-- Inno Setup: genera un único `.exe` instalador sin requerir admin, instala en `%APPDATA%\ReporteSemanal` del usuario actual
+- Inno Setup: genera un instalador `.exe` sin requerir permisos de administrador, instalando en `%APPDATA%\ReporteSemanal`
 
 ### Arquitectura
 
@@ -110,23 +107,16 @@ El backend expone una API HTTP local en `localhost:4577`:
 - `POST /app/quit`
 - `GET /app/data-folder`
 
-El tray hace polling cada 5 segundos a `/status` para actualizar el tooltip. El launcher, `control.exe` y `configuracion.exe` también consumen esta API.
+El tray hace polling cada 5 segundos a `/status` para actualizar el tooltip. El launcher, `control.exe` y `Configuracion.exe` también consumen esta API.
 
 **Datos**
 
 Todo se guarda en `%APPDATA%\ReporteSemanal`:
 
-- `data.json`: acumula segundos por aplicación, se resetea cada lunes tras enviar el reporte
+- `data.json`: acumula segundos por aplicación en memoria y persiste a disco cada 60s
 - `.env`: credenciales de Gmail (`EMAIL_USER`, `EMAIL_PASS`)
-- `.report-sent`: flag que indica si el reporte del lunes ya fue enviado
+- `.report-sent`: flag con la fecha de hoy para evitar envíos duplicados el lunes
 - `.lock`: archivo de PID para garantizar instancia única del backend
-
-**Seguridad y estabilidad**
-
-- Single instance lock: si hay un proceso vivo con el PID del `.lock`, el nuevo se cierra solo.
-- Lock huérfano: si el PID no existe, se sobreescribe y arranca normal.
-- Error handling en el spawn del tray: si no encuentra `ReporteTray.exe`, loguea y sigue.
-- El PDF se borra siempre después del envío, incluso si el envío falla (`try/finally`).
 
 ### Estructura de carpetas
 
@@ -137,10 +127,13 @@ Reporte_semanal/
 │   ├── main.ts
 │   ├── single-instance.ts
 │   ├── mail/
+│   │   ├── mail.module.ts
 │   │   └── mail.service.ts
 │   ├── metrics/
+│   │   ├── metrics.module.ts
 │   │   └── metrics.service.ts
 │   ├── reports/
+│   │   ├── reports.controller.ts
 │   │   ├── reports.module.ts
 │   │   ├── reports.service.ts
 │   │   └── templates/
@@ -152,87 +145,60 @@ Reporte_semanal/
 │   └── tracker/
 │       ├── tracker.module.ts
 │       └── tracker.service.ts
-├── tray/
-│   ├── ReporteTray.csproj
-│   ├── Program.cs
-│   └── TrayApplicationContext.cs
-├── launcher/
-│   ├── ReporteLauncher.csproj
-│   └── Program.cs
+├── csharp/
+│   ├── ReporteSemanal.sln
+│   ├── launcher/
+│   │   ├── ReporteLauncher.csproj
+│   │   └── Program.cs
+│   ├── tray/
+│   │   ├── ReporteTray.csproj
+│   │   ├── Program.cs
+│   │   └── TrayApplicationContext.cs
+│   ├── configuracion/
+│   │   ├── ReporteConfiguracion.csproj
+│   │   └── Program.cs
+│   └── control/
+│       ├── ReporteControl.csproj
+│       └── Program.cs
 ├── runtime/
-│   ├── node.exe        (no en repo, descargar de nodejs.org)
-│   └── ReporteTray.exe (no en repo, compilar con dotnet build)
+│   ├── node.exe        (portable node runtime)
+│   └── ReporteTray.exe (compilado con dotnet build)
 ├── images/
-│   └── icon.ico
+│   ├── icon.ico
+│   ├── configuracion-de-sobres.ico
+│   ├── cronometro.ico
+│   └── encendido.ico
 ├── dist/               (generado por npm run build)
-├── node_modules/       (generado por npm ci)
-├── configuracion.ps1
-├── control.ps1
+├── node_modules/
 ├── Launcher.exe        (compilado con dotnet build)
-├── Configuracion.exe   (compilado con ps2exe)
-├── control.exe         (compilado con ps2exe)
+├── Configuracion.exe   (compilado con dotnet build)
+├── control.exe         (compilado con dotnet build)
 ├── instalador.iss
 └── package.json
 ```
 
 ### Requisitos de desarrollo
 
-- Node.js v22 (misma versión que el `node.exe` portable empacado)
+- Node.js v22
 - npm
-- .NET SDK con soporte `net48` + .NET Framework 4.8 Developer Pack
-- `ps2exe` (`Install-Module ps2exe -Scope CurrentUser`)
-- Inno Setup para compilar el instalador
-- Windows (el tray y el launcher usan WinForms, no compilan en otros SO)
+- .NET SDK con soporte `net48` (o .NET Framework 4.8 Developer Pack)
+- Inno Setup (opcional, para compilar el instalador `iscc instalador.iss`)
 
-### Compilar y empacar el instalador
+### Compilar todo el proyecto
 
-```
-npm ci
+```powershell
+# 1. Compilar Backend NestJS
 npm run build
-npm prune --production
-```
 
-Descarga `node.exe` portable x64 de [nodejs.org](https://nodejs.org) y colócalo en `runtime\node.exe`.
+# 2. Compilar todas las aplicaciones C#
+npm run build:csharp
 
-```
-cd tray && dotnet build -c Release
-```
+# 3. Copiar ejecutables a producción
+Copy-Item csharp/launcher/bin/Release/net48/Launcher.exe -Destination Launcher.exe
+Copy-Item csharp/tray/bin/Release/net48/ReporteTray.exe -Destination runtime/ReporteTray.exe
+Copy-Item csharp/configuracion/bin/Release/net48/Configuracion.exe -Destination Configuracion.exe
+Copy-Item csharp/control/bin/Release/net48/control.exe -Destination control.exe
 
-Copia `tray\bin\Release\net48\ReporteTray.exe` a `runtime\ReporteTray.exe`.
-
-```
-cd launcher && dotnet build -c Release
-```
-
-Copia `launcher\bin\Release\net48\ReporteSemanal.exe` a la raíz como `Launcher.exe`.
-
-Compila `configuracion.ps1` con `ps2exe` como `Configuracion.exe` (flags: `-STA -noConsole`).
-
-Compila `control.ps1` con `ps2exe` como `control.exe` (flags: `-STA -noConsole`).
-
-```
+# 4. Compilar instalador
 iscc instalador.iss
 ```
-
-El instalador queda en `Output\ReporteSemanal-Setup.exe`.
-
-### Publicar un release
-
-1. Actualiza la versión en `package.json` y en `instalador.iss`.
-2. Compila el instalador siguiendo los pasos anteriores.
-3. Crea el tag correspondiente: `git tag v2.0.0 && git push origin v2.0.0`.
-4. En GitHub, ve a **Releases → Draft a new release**, selecciona el tag y sube `Output\ReporteSemanal-Setup.exe` como asset.
-5. Describe los cambios respecto a la versión anterior en las notas del release.
-
-### Comportamiento esperado tras instalar
-
-1. El instalador copia los archivos a `%APPDATA%\ReporteSemanal` sin pedir admin.
-2. Abre `Configuracion.exe` automáticamente.
-3. El usuario ingresa correo Gmail y contraseña de aplicación.
-4. El usuario elige si quiere arranque automático con Windows.
-5. Al guardar, escribe `.env` y `data.json` en la carpeta de instalación.
-6. Lanza `Launcher.exe`, que arranca el backend y el tray.
-7. El tray aparece en la bandeja del sistema.
-8. Cada lunes al arrancar, el backend revisa si ya envió el reporte.
-9. Si no lo envió, genera el PDF y lo manda al correo configurado.
-10. Resetea `data.json` y marca `.report-sent` con la fecha actual.

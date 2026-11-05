@@ -1,18 +1,26 @@
 {
   "name": "reporte_semanal",
-  "version": "1.0.0",
-  "main": "index.js",
+  "version": "2.0.0",
+  "description": "Aplicación para Windows que registra el tiempo de uso de aplicaciones y envía un reporte semanal en PDF por correo.",
+  "main": "dist/main.js",
   "bin": "dist/main.js",
   "scripts": {
     "build": "tsc",
+    "build:csharp": "powershell -Command \"Get-ChildItem csharp -Filter *.csproj -Recurse | ForEach-Object { dotnet build $_.FullName -c Release }\"",
+    "build:all": "npm run build && npm run build:csharp",
     "start": "node dist/main",
-    "start:dev": "ts-node -r tsconfig-paths/register src/main.ts",
-    "start:all": "concurrently \"node tracker.js\" \"npm run start:dev\""
+    "start:dev": "ts-node -r tsconfig-paths/register src/main.ts"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "keywords": [
+    "productivity",
+    "tracker",
+    "windows",
+    "report",
+    "pdf",
+    "csharp"
+  ],
+  "author": "Juanse",
+  "license": "MIT",
   "dependencies": {
     "@nestjs/common": "^11.1.16",
     "@nestjs/core": "^11.1.16",
@@ -30,16 +38,8 @@
     "@types/node": "^22.0.0",
     "@types/nodemailer": "^7.0.11",
     "@types/pdfkit": "^0.17.5",
-    "concurrently": "^9.2.1",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.7.3"
-  },
-  "pkg": {
-    "entrypoint": "dist/main.js",
-    "targets": [
-      "node20-win-x64"
-    ],
-    "outputPath": "build"
   }
 }

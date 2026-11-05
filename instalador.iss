@@ -1,8 +1,7 @@
-
 [Setup]
 AppId={{61834A1B-73C4-479D-BD57-DB124D2F29A9}}
 AppName=Reporte Semanal de Productividad
-AppVersion=2.1.0
+AppVersion=2.0.0
 AppPublisher=Juanse
 DefaultDirName={userappdata}\ReporteSemanal
 DisableDirPage=yes
@@ -16,6 +15,13 @@ SetupIconFile=images\icon.ico
 Compression=lzma2
 SolidCompression=yes
 
+VersionInfoVersion=2.0.0.0
+VersionInfoCompany=Juanse
+VersionInfoDescription=Instalador de Reporte Semanal de Productividad
+VersionInfoCopyright=Copyright (C) 2026 Juanse
+VersionInfoProductName=Reporte Semanal de Productividad
+VersionInfoProductVersion=2.0.0
+
 [Files]
 Source: "dist\*"; DestDir: "{app}\dist"; Flags: recursesubdirs ignoreversion
 Source: "node_modules\*"; DestDir: "{app}\node_modules"; Flags: recursesubdirs ignoreversion
@@ -26,23 +32,24 @@ Source: "control.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "Configuracion.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 [Run]
-
 Filename: "{app}\Configuracion.exe"; \
-Description: "Configurar correo y opcioones de arranque"; \
+  Description: "Configurar correo y opciones de arranque"; \
   Flags: waituntilterminated
 
 [UninstallRun]
+Filename: "{sys}\taskkill.exe"; \
+  Parameters: "/F /IM ReporteTray.exe /T"; \
+  Flags: runhidden; RunOnceId: "MatarTray"
 
-Filename: "powershell.exe"; \
-  Parameters: "-ExecutionPolicy Bypass -Command ""Get-CimInstance Win32_Process | Where-Object {{ $_.ExecutablePath -eq '{app}\runtime\node.exe' -or $_.ExecutablePath -eq '{app}\runtime\ReporteTray.exe' } | ForEach-Object {{ Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue } """; \
-  Flags: runhidden; RunOnceId: "MatarProcesos"
+Filename: "{sys}\taskkill.exe"; \
+  Parameters: "/F /IM node.exe /T"; \
+  Flags: runhidden; RunOnceId: "MatarNode"
 
-Filename: "reg.exe"; \
+Filename: "{sys}\reg.exe"; \
   Parameters: "delete ""HKCU\Software\Microsoft\Windows\CurrentVersion\Run"" /v ReporteSemanal /f"; \
   Flags: runhidden; RunOnceId: "BorrarRegistro"
 
 [UninstallDelete]
-
 Type: filesandordirs; Name: "{app}"
 
 [Code]

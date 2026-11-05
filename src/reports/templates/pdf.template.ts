@@ -1,14 +1,14 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
+import PDFDocument from 'pdfkit';
 import { WeeklyMetrics } from '../../metrics/metrics.service';
-const PDFDocument = require('pdfkit');
 
 export function generatePDF(metrics: WeeklyMetrics): Promise<string> {
   return new Promise((resolve, reject) => {
-    const doc: typeof PDFDocument = new PDFDocument({ margin: 50 });
+    const doc = new PDFDocument({ margin: 50 });
 
-    const dir = path.join(os.homedir(), 'AppData', 'Roaming', 'ReporteSemanal');
+    const dir = path.join(os.tmpdir(), 'ReporteSemanal');
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 
     const filePath = path.join(dir, `report-${Date.now()}.pdf`);
@@ -35,7 +35,7 @@ export function generatePDF(metrics: WeeklyMetrics): Promise<string> {
     doc
       .fontSize(14)
       .fillColor('#1e3a5f')
-      .text('Top Apps mas usadas esta semana', { underline: true });
+      .text('Top Apps más usadas esta semana', { underline: true });
 
     doc.moveDown(0.8);
 
@@ -76,7 +76,7 @@ export function generatePDF(metrics: WeeklyMetrics): Promise<string> {
     doc
       .fontSize(9)
       .fillColor('#9ca3af')
-      .text('Generado automaticamente con NestJS', { align: 'center' });
+      .text('Generado automáticamente con NestJS', { align: 'center' });
 
     doc.end();
 

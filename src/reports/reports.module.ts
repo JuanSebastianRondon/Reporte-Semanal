@@ -3,9 +3,10 @@ import { ReportsService } from './reports.service';
 import { ReportsController } from './reports.controller';
 import { MailModule } from '../mail/mail.module';
 import { MetricsModule } from '../metrics/metrics.module';
+import { TrackerModule } from '../tracker/tracker.module';
 
 @Module({
-  imports: [MailModule, MetricsModule],
+  imports: [MailModule, MetricsModule, TrackerModule],
   controllers: [ReportsController],
   providers: [ReportsService],
   exports: [ReportsService],
