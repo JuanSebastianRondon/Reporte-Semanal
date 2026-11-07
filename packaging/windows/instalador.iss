@@ -13,9 +13,9 @@ PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0
-OutputDir=Output
+OutputDir=..\..\Output
 OutputBaseFilename=ReporteSemanal-Setup
-SetupIconFile=images\icon.ico
+SetupIconFile=..\..\assets\icon.ico
 WizardStyle=modern
 Compression=lzma2
 SolidCompression=yes
@@ -29,17 +29,17 @@ VersionInfoProductVersion=2.0.0
 
 [Files]
 ; Backend Node.js
-Source: "dist\*";         DestDir: "{app}\dist";         Flags: recursesubdirs ignoreversion
-Source: "node_modules\*"; DestDir: "{app}\node_modules"; Flags: recursesubdirs ignoreversion
+Source: "..\..\dist\*";         DestDir: "{app}\dist";         Flags: recursesubdirs ignoreversion
+Source: "..\..\node_modules\*"; DestDir: "{app}\node_modules"; Flags: recursesubdirs ignoreversion
 
 ; Runtime
-Source: "runtime\node.exe";       DestDir: "{app}\runtime"; Flags: ignoreversion
-Source: "runtime\ReporteTray.exe"; DestDir: "{app}\runtime"; Flags: ignoreversion
+Source: "..\..\runtime\node.exe";       DestDir: "{app}\runtime"; Flags: ignoreversion
+Source: "..\..\runtime\ReporteTray.exe"; DestDir: "{app}\runtime"; Flags: ignoreversion
 
 ; Ejecutables C# (nombres exactos en minúsculas tal como los genera dotnet build)
-Source: "Launcher.exe";       DestDir: "{app}"; Flags: ignoreversion
-Source: "control.exe";        DestDir: "{app}"; Flags: ignoreversion
-Source: "configuracion.exe";  DestDir: "{app}"; Flags: ignoreversion
+Source: "..\..\Launcher.exe";       DestDir: "{app}"; Flags: ignoreversion
+Source: "..\..\control.exe";        DestDir: "{app}"; Flags: ignoreversion
+Source: "..\..\configuracion.exe";  DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{userstartup}\Reporte Semanal"; Filename: "{app}\Launcher.exe"; \
@@ -90,3 +90,4 @@ begin
     Result := False;
   end;
 end;
+

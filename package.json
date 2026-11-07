@@ -6,8 +6,8 @@
   "bin": "dist/main.js",
   "scripts": {
     "build": "tsc",
-    "build:csharp": "powershell -Command \"Get-ChildItem csharp -Filter *.csproj -Recurse | ForEach-Object { dotnet build $_.FullName -c Release }\"",
-    "build:all": "npm run build && npm run build:csharp",
+    "build:windows": "powershell -Command \"Get-ChildItem clients/windows -Filter *.csproj -Recurse | ForEach-Object { dotnet build $_.FullName -c Release }\"",
+    "build:all": "npm run build && npm run build:windows",
     "start": "node dist/main",
     "start:dev": "ts-node -r tsconfig-paths/register src/main.ts"
   },

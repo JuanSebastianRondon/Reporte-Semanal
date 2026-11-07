@@ -1,0 +1,14 @@
+[Unit]
+Description=Reporte Semanal de Productividad
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/.local/share/reporte-semanal
+ExecStart=/usr/bin/node dist/main.js
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target
+
