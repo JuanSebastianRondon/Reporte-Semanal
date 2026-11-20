@@ -7,4 +7,28 @@ updates:
       day: "monday"
       time: "09:00"
       timezone: "America/Bogota"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 5
+    labels: ["dependencies", "npm"]
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    # No proponer versiones recién publicadas. Los avisos de seguridad no se retrasan.
+    cooldown:
+      default-days: 3
+      semver-major-days: 14
+    # Los saltos mayores (NestJS 12, TypeScript 7, etc.) se planifican a mano.
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    # Un solo PR con todos los parches y menores compatibles.
+    groups:
+      npm-minor-patch:
+        patterns: ["*"]
+        update-types:
+          - "version-update:semver-minor"
+          - "version-update:semver-patch"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"

@@ -112,7 +112,7 @@ export function generatePDF(metrics: WeeklyMetrics): Promise<string> {
     const cardGap = 12;
     const cardWidth = (CONTENT_WIDTH - cardGap * 2) / 3;
     const cardTop = 144;
-    const cardHeight = 58;
+    const cardHeight = 64;
 
     const cards = [
       {
@@ -122,7 +122,7 @@ export function generatePDF(metrics: WeeklyMetrics): Promise<string> {
       },
       {
         label: 'APP PRINCIPAL',
-        value: topApp ? fitText(topApp.name, 20) : '—',
+        value: topApp ? String(topApp.name || '') : '—',
         hint: topApp
           ? `${topApp.minutes} min · ${(topApp.minutes / 60).toFixed(1)}h`
           : 'sin datos',
@@ -149,21 +149,27 @@ export function generatePDF(metrics: WeeklyMetrics): Promise<string> {
           lineBreak: false,
         });
 
+      // Los nombres largos se ajustan a dos líneas con fuente más pequeña
+      // en vez de recortarse con "…".
+      const valueWidth = cardWidth - 20;
+      doc.font('Helvetica-Bold').fontSize(15);
+      const valueFontSize = doc.widthOfString(card.value) > valueWidth ? 11 : 15;
       doc
-        .font('Helvetica-Bold')
-        .fontSize(15)
+        .fontSize(valueFontSize)
         .fillColor(colors.ink)
         .text(card.value, x + 12, cardTop + 24, {
-          width: cardWidth - 20,
-          lineBreak: false,
+          width: valueWidth,
+          height: valueFontSize === 11 ? 28 : 18,
+          ellipsis: valueFontSize === 11,
+          lineBreak: valueFontSize === 11,
         });
 
       doc
         .font('Helvetica')
         .fontSize(8)
         .fillColor(colors.muted)
-        .text(card.hint, x + 12, cardTop + 44, {
-          width: cardWidth - 20,
+        .text(card.hint, x + 12, cardTop + 50, {
+          width: valueWidth,
           lineBreak: false,
         });
     });

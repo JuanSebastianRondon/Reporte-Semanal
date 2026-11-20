@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Security.Cryptography;
@@ -203,6 +204,46 @@ namespace ReporteConfiguracion
             }
         }
 
+        /// <summary>
+        /// Actualiza solo EMAIL_USER y EMAIL_PASS. Las demás claves del .env
+        /// (REPORT_RECEIVER, REPORT_PDF_PALETTE, etc.) se conservan.
+        /// </summary>
+        private void WriteEnvFile(string correo, string pass)
+        {
+            var lines = new List<string>();
+            if (File.Exists(_envPath))
+            {
+                lines.AddRange(File.ReadAllLines(_envPath));
+            }
+
+            var passValue = ProtectPass(pass);
+            var userWritten = false;
+            var passWritten = false;
+
+            for (var i = 0; i < lines.Count; i++)
+            {
+                if (lines[i].StartsWith("EMAIL_USER=", StringComparison.Ordinal))
+                {
+                    lines[i] = "EMAIL_USER=" + correo;
+                    userWritten = true;
+                }
+                else if (lines[i].StartsWith("EMAIL_PASS=", StringComparison.Ordinal))
+                {
+                    lines[i] = "EMAIL_PASS=" + passValue;
+                    passWritten = true;
+                }
+            }
+
+            if (!userWritten) lines.Add("EMAIL_USER=" + correo);
+            if (!passWritten) lines.Add("EMAIL_PASS=" + passValue);
+
+            File.WriteAllText(
+                _envPath,
+                string.Join("\n", lines) + "\n",
+                new UTF8Encoding(false)
+            );
+        }
+
         private void OnSaveClicked(object sender, EventArgs e)
         {
             var correo = _inputCorreo.Text.Trim();
@@ -219,14 +260,12 @@ namespace ReporteConfiguracion
 
             try
             {
-                var utf8NoBom = new UTF8Encoding(false);
-                var envContent = $"EMAIL_USER={correo}\nEMAIL_PASS={ProtectPass(pass)}\n";
-                File.WriteAllText(_envPath, envContent, utf8NoBom);
+                WriteEnvFile(correo, pass);
 
                 var dataPath = Path.Combine(_appDir, "data.json");
                 if (!File.Exists(dataPath))
                 {
-                    File.WriteAllText(dataPath, "{\"apps\":{},\"totalSeconds\":0}", utf8NoBom);
+                    File.WriteAllText(dataPath, "{\"apps\":{},\"totalSeconds\":0}", new UTF8Encoding(false));
                 }
 
                 var launcherExe = Path.Combine(_appDir, "Launcher.exe");
