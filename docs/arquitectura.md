@@ -25,13 +25,15 @@ Reporte Semanal es un sistema de monitoreo de productividad personal y generaci�
 
 ## 1. Backend Core (`src/`)
 El backend está construido con NestJS y corre de forma agnóstica al sistema operativo:
-* **Tracker (`src/tracker/`):** Registra el tiempo de uso de la ventana activa en memoria cada 5 segundos y realiza volcados atómicos a `data.json` cada 60 segundos (y al apagar el proceso).
-* **Reports (`src/reports/`):** Tarea programada (Cron) que cada lunes evalúa si corresponde enviar el reporte por correo con el PDF adjunto (`pdfkit`).
-* **Status / API (`src/status/`):** Expone endpoints locales en `http://localhost:4577`:
+* **Tracker (`src/tracker/`):** Mide el tiempo real entre ticks (5 s), descarta huecos por suspensión, ignora períodos inactivos (>60 s) y realiza volcados atómicos a `data.json` cada 60 segundos (y al cerrar con `app.close()`).
+* **Reports (`src/reports/`):** Cron horario que envía si la semana ISO del flag `.report-sent` es anterior a la actual (recupera reportes perdidos si el equipo estuvo apagado el lunes). El envío manual no reinicia los datos.
+* **Status / API (`src/status/`):** Expone endpoints locales en `http://localhost:4577`, protegidos con `X-Report-Token`:
   * `GET /status`
+  * `POST /report/generate`
   * `GET /app/data-folder`
   * `POST /app/quit`
-* **Metrics (`src/metrics/`):** Calcula resúmenes, totales y porcentajes a partir de `data.json`.
+* **Metrics (`src/metrics/`):** Calcula resúmenes, totales y el rango de fechas del PDF a partir de `data.json`.
+* **Common / Secrets (`src/common/`, `src/secrets/`):** Rutas centralizadas, token de API y resolución de `EMAIL_PASS` (DPAPI en Windows, `secret-tool` en Linux, texto plano sólo como legado).
 
 ---
 
@@ -48,9 +50,10 @@ El backend está construido con NestJS y corre de forma agnóstica al sistema op
 ### Linux (`clients/linux/`)
 * **Lenguaje:** Go.
 * **Componentes:**
-  * `cmd/launcher/`: Verifica el estado de la API y lanza el backend Node.js en segundo plano.
-  * `cmd/tray/`: Indicador en la barra del entorno de escritorio (GNOME, KDE, XFCE) usando AppIndicator / Systray.
-  * `cmd/config/`: Utilidad para configurar variables de entorno y habilitar el servicio de systemd del usuario.
+  * `cmd/launcher/`: Verifica el estado de la API (con token) y lanza el backend Node.js.
+  * `cmd/tray/`: Monitor de estado por consola; comprueba el servicio cada 30 s. **No** implementa AppIndicator/Systray.
+  * `cmd/config/`: Configura `.env` (0600), guarda la contraseña con `secret-tool` cuando está disponible y habilita el servicio de systemd del usuario.
+  * `internal/api/`: Cliente HTTP compartido que añade la cabecera `X-Report-Token`.
 
 ---
 

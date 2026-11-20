@@ -1,36 +1,36 @@
-# Documentación Técnica - Reporte Semanal de Productividad (v2.0)
+# Documentación Técnica - Reporte Semanal de Productividad (v2.0.2)
 
 ---
 
 ## 1. Arquitectura General
 
-La aplicación se compone de un backend unificado en **NestJS** y componentes auxiliares de escritorio en **C# / WinForms** (.NET Framework 4.8):
+Backend unificado en **NestJS** más componentes de escritorio en **C# / WinForms** (.NET Framework 4.8) y **Go**:
 
-- **Backend NestJS (Node.js portable)**:
+- **Backend NestJS (Node.js portable):**
   - Corre como servicio en segundo plano escuchando en `http://localhost:4577`.
-  - Registra las ventanas activas cada 5 segundos mediante `get-windows`, acumulando el tiempo de uso en memoria y persistiendo de forma atómica a `data.json` cada 60 segundos o al cerrarse.
-  - Genera el reporte PDF semanal (`pdfkit`) y lo envía automáticamente por correo (`nodemailer` vía Gmail SMTP) cada lunes.
-  - Lanza automáticamente el icono de bandeja del sistema (`ReporteTray.exe`) al inicializarse.
-- **ReporteTray.exe (C# / WinForms)**:
-  - Icono en el área de notificación (System Tray).
-  - Consulta periódicamente `GET /status` para mostrar el tooltip con las horas acumuladas.
-  - Ofrece menú contextual para generar reporte manual, abrir la carpeta de datos y apagar el programa.
-- **Launcher.exe (C#)**:
-  - Punto de entrada principal (utilizado por el registro de Windows al inicio de sesión).
-  - Comprueba si el backend ya está corriendo; si no, lanza `runtime\node.exe dist\main.js` de forma invisible.
-- **Configuracion.exe / control.exe**:
-  - Formularios de interfaz de usuario para configurar credenciales y arranque automático, y encender/apagar el servicio.
+  - Mide el tiempo real entre ticks de 5 s con `get-windows`, descarta huecos >60 s (suspensión) e ignora períodos con >60 s de inactividad. Persiste de forma atómica en `data.json` cada 60 s o al cerrarse.
+  - Genera el PDF semanal (`pdfkit`) y lo envía por Gmail SMTP (`nodemailer`).
+  - Lanza `runtime/ReporteTray.exe` al iniciarse (`detached`, sin bloquear la salida del proceso).
+- **ReporteTray.exe (C# / WinForms):** icono del área de notificación, consulta `/status` cada 5 s y ofrece generar reporte, abrir datos y salir.
+- **Launcher.exe (C#):** comprueba `/status` y, si no responde, lanza `runtime\node.exe dist\main.js` oculto.
+- **Configuracion.exe / control.exe:** credenciales cifradas con DPAPI y encendido/apagado del servicio.
+- **Clientes Linux (Go):** launcher, monitor de estado por consola y configurador con llavero.
 
 ---
 
 ## 2. API Local (Puerto 4577)
 
+Todas las rutas exigen la cabecera `X-Report-Token`, cuyo valor se lee de `.token`:
+
 | Método | Endpoint | Descripción | Respuesta Ejemplo |
 |---|---|---|---|
-| `GET` | `/status` | Estado actual del acumulador semanal y fecha del último reporte | `{"weekTotal":"12.5h","lastReportSentAt":"Mon Nov 03 2026"}` |
-| `POST` | `/report/generate` | Genera y envía inmediatamente el reporte semanal por correo | `{"ok":true}` |
-| `GET` | `/app/data-folder` | Ruta del directorio de datos de la aplicación | `{"path":"C:\\Users\\...\\ReporteSemanal"}` |
-| `POST` | `/app/quit` | Detiene y cierra el servicio de backend de manera controlada | `{"ok":true}` |
+| `GET` | `/status` | Estado del acumulador y semana del último reporte | `{"weekTotal":"12.5h","lastReportSentAt":"2026-W46"}` |
+| `POST` | `/report/generate` | Genera y envía el reporte **sin** reiniciar datos ni cerrar la semana | `{"ok":true}` |
+| `POST` | `/reports/send` | Igual que el anterior | `{"message":"Reporte enviado correctamente"}` |
+| `GET` | `/app/data-folder` | Ruta del directorio de datos | `{"path":"C:\\Users\\...\\ReporteSemanal"}` |
+| `POST` | `/app/quit` | Cierre controlado (`app.close()` → `flush()`) | `{"ok":true}` |
+
+Sin token, cualquier endpoint responde `401 {"error":"No autorizado"}`.
 
 ---
 
@@ -38,26 +38,34 @@ La aplicación se compone de un backend unificado en **NestJS** y componentes au
 
 ```
 src/
-├── app.module.ts              # Módulo raíz que importa Schedule, Tracker, Mail, Metrics, Reports y Status
-├── main.ts                    # Bootstrap, control de instancia única (PID lock) y spawn del Tray
-├── single-instance.ts         # Mecanismo de bloqueo con .lock para garantizar proceso único
+├── app.module.ts              # Módulo raíz + ApiTokenMiddleware
+├── main.ts                    # Bootstrap, lock, token, dotenv, Tray y handler de cierre
+├── single-instance.ts         # .lock con PID + control de EADDRINUSE en main
+├── common/
+│   ├── paths.ts               # getAppDir() centralizado
+│   ├── api-token.ts           # Generación/lectura de .token
+│   └── api-token.middleware.ts# Verificación timing-safe de la cabecera
+├── secrets/
+│   ├── secrets.service.ts     # dpapi: / keyring: / texto plano (legado)
+│   └── secrets.module.ts
 ├── tracker/
-│   ├── tracker.service.ts     # Detección periódica (5s), caché en memoria y persistencia atómica
+│   ├── tracker.service.ts     # Tiempo real, I/O atómico, flush al cerrar
+│   ├── idle-detector.ts       # GetLastInputInfo (Windows) / xprintidle (Linux)
 │   └── tracker.module.ts
 ├── metrics/
-│   ├── metrics.service.ts     # Agrupa segundos a minutos, calcula top 15 de apps y horas totales
+│   ├── metrics.service.ts     # Top 15 en minutos + horas totales
 │   └── metrics.module.ts
 ├── mail/
-│   ├── mail.service.ts        # Conexión SMTP con Gmail y envío del adjunto PDF
+│   ├── mail.service.ts        # SMTP con timeouts, destinatario configurable
 │   └── mail.module.ts
 ├── reports/
-│   ├── reports.service.ts     # Orquestación de envío, reintentos y programación recurrente con @Cron
+│   ├── reports.service.ts     # Semana ISO, mutex de envío, reintentos
+│   ├── week.ts                # getWeekKey / isDueForWeeklyReport
 │   ├── reports.module.ts
-│   └── templates/
-│       └── pdf.template.ts    # Maquetado y renderizado del reporte en PDF con pdfkit
+│   └── templates/pdf.template.ts
 └── status/
-    ├── status.controller.ts   # Expone endpoints REST consumidos por el Tray y Launcher
-    ├── status.service.ts
+    ├── status.controller.ts
+    ├── status.service.ts      # setShutdownHandler() para cierre graceful
     └── status.module.ts
 ```
 
@@ -65,25 +73,53 @@ src/
 
 ## 4. Persistencia y Archivos de Estado
 
-En el directorio de la aplicación (`%APPDATA%\ReporteSemanal` en instalación, o directorio raíz en desarrollo):
+En `%APPDATA%\ReporteSemanal` (instalación) o raíz del proyecto (desarrollo):
 
-- **`data.json`**: Acumulado semanal en segundos por aplicación (`{"apps": {"chrome.exe": 1200}, "totalSeconds": 1200}`).
-- **`.report-sent`**: Almacena la fecha del último reporte enviado para evitar reenvíos duplicados el mismo día.
-- **`.env`**: Almacena las variables de entorno `EMAIL_USER` y `EMAIL_PASS`.
-- **`.lock`**: Contiene el PID del proceso en ejecución para garantizar instancia única y evitar duplicidad de puertos o procesos en segundo plano.
+- **`data.json`**: acumulado en segundos por aplicación (`{"apps":{"chrome.exe":1200},"totalSeconds":1200}`).
+- **`.report-sent`**: semana ISO del último envío automático (`2026-W47`). Acepta el formato antiguo (`Mon Nov 09 2026`) para migrar.
+- **`.env`**: `EMAIL_USER`, `EMAIL_PASS` (`dpapi:...` / `keyring:` / legado) y `REPORT_RECEIVER` opcional.
+- **`.lock`**: PID del proceso en ejecución. El desinstalador lo lee para matar **sólo** ese proceso.
+- **`.token`**: token hexadecimal de 64 caracteres para la API local (0600 en sistemas POSIX).
 
+### Regla semanal
+
+`isDueForWeeklyReport()` compara la semana ISO del flag con la actual. Si el equipo estuvo apagado el lunes, el primer arranque de esa semana envía el reporte. El envío automático es el único que escribe el flag y reinicia `data.json`; los envíos manuales conservan el acumulado.
+
+Para no bloquear `app.listen()`, el envío del arranque se programa con `setTimeout(..., 30000)` sin `await`. Un mutex (`inFlight`) evita duplicados entre cron, arranque y peticiones manuales.
 
 ---
 
-## 5. Componentes de Escritorio en C# (`csharp/`)
+## 5. Clientes de Escritorio
 
-Todos los componentes de interfaz gráfica y ciclo de vida de escritorio están unificados en la carpeta `csharp/`:
+### Windows (`clients/windows/`)
 
 ```
-csharp/
-├── ReporteSemanal.sln         # Solución para compilar todos los proyectos
-├── launcher/                   # Launcher.exe: Verifica el backend y lanza runtime\node.exe
-├── tray/                       # ReporteTray.exe: Icono en la bandeja del sistema con menú
-├── configuracion/              # Configuracion.exe: Ventana para configurar correo y autoarranque
-└── control/                    # control.exe: Ventana para encender o apagar el servicio
+clients/windows/
+├── ReporteSemanal.sln
+├── shared/ApiAuth.cs          # HttpClient con X-Report-Token
+├── launcher/                  # Launcher.exe
+├── tray/                      # ReporteTray.exe
+├── configuracion/             # Configuracion.exe (DPAPI + HKCU Run)
+└── control/                   # control.exe
 ```
+
+- El autoarranque se gestiona **únicamente** con `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`. El instalador elimina el acceso directo obsoleto de `Startup` para evitar dos instancias y el modal “El servicio ya está corriendo”.
+- `configuracion.exe` cifra `EMAIL_PASS` con `ProtectedData.Protect(..., CurrentUser)`.
+- El desinstalador lee `.lock` y ejecuta `taskkill /PID <pid> /T`: ya no cierra otros procesos Node del sistema.
+
+### Linux (`clients/linux/`)
+
+- `cmd/launcher/`: lanza `node dist/main.js` (ruta calculada desde `bin/`).
+- `cmd/tray/`: monitor de consola (no hay AppIndicator implementado).
+- `cmd/config/`: guarda `.env` con `0600` y delega la contraseña a `secret-tool` si existe.
+- `internal/api/`: petición HTTP con token.
+
+---
+
+## 6. Calidad y Verificación
+
+- `npm test` compila con `tsc` y ejecuta 13 pruebas con `node --test` (sin dependencias extra): semanas ISO, métricas, PDF, flag/reintentos/mutex, token y middleware.
+- `.github/workflows/ci.yml` ejecuta build + tests + `npm audit` en Linux y compila los clientes C# en Windows.
+- `.github/dependabot.yml` revisa npm semanalmente los lunes (`America/Bogota`).
+- `.github/workflows/release.yml` se dispara con tags `vX.Y.Z`: valida la versión (`npm run version:check`), compila backend y clientes, genera `ReporteSemanal-Setup.exe` (Inno Setup) y `reporte-semanal-vX.Y.Z-linux.tar.gz`, y publica el release con `softprops/action-gh-release` y notas automáticas. El job de publicación es el único con `contents: write`.
+- `tsconfig.json` mantiene `strict: false` por compatibilidad con el código legado; las pruebas cubren los puntos críticos de lógica.

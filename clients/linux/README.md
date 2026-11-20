@@ -1,37 +1,30 @@
 # Cliente Linux en Go — Reporte Semanal
 
-Este directorio contiene el cliente nativo para sistemas Linux (escrito en Go) para interactuar con el backend común de Node.js.
+Este directorio contiene los clientes nativos para Linux que interactúan con el backend de Node.js.
 
 ## Estructura
 
-* `cmd/launcher/`: Inicia el servicio de fondo (Node.js) y levanta la bandeja.
-* `cmd/tray/`: Bandeja de sistema con menú contextual para escritorios Linux (X11 / Wayland).
-* `cmd/config/`: Herramienta para gestionar `.env` y el servicio de usuario de systemd.
+* `cmd/launcher/`: comprueba `/status` con token y lanza el backend.
+* `cmd/tray/`: **monitor de estado por consola** (no hay AppIndicator/Systray implementado); verifica el servicio cada 30 s.
+* `cmd/config/`: escribe `.env` con permisos `0600` y guarda `EMAIL_PASS` con `secret-tool` si está disponible.
+* `internal/api/`: cliente HTTP que añade la cabecera `X-Report-Token` leyendo `<raiz>/.token`.
 
 ## Dependencias en Linux
 
-Para compilar con soporte de bandeja del sistema (`systray` / `libappindicator`):
+Para la detección de inactividad se usa `xprintidle` (X11). Para guardar la contraseña en el llavero se usa `secret-tool` (libsecret). Ambos son opcionales: si faltan, se sigue con comportamiento degradado.
+
 ```bash
-# Ubuntu / Debian
-sudo apt install libayatana-appindicator3-dev gcc
-
-# Fedora
-sudo dnf install libayatana-appindicator3-devel gcc
-
-# Arch Linux
-sudo pacman -S libayatana-appindicator gcc
+# Ubuntu / Debian (opcional)
+sudo apt install libsecret-tools xprintidle
 ```
 
 ## Compilación
 
 ```bash
-# Compilar launcher
+cd clients/linux
 go build -o bin/launcher ./cmd/launcher
-
-# Compilar tray
-go build -o bin/tray ./cmd/tray
-
-# Compilar config
+go build -o bin/monitor ./cmd/tray
 go build -o bin/config ./cmd/config
 ```
 
+El instalador `packaging/linux/install.sh` compila estos binarios automáticamente cuando `go` está disponible y los copia a `~/.local/share/reporte-semanal/bin`.

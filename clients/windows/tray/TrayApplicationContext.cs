@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
+using ReporteSemanal.Shared;
 
 namespace ReporteTray
 {
@@ -20,7 +21,7 @@ namespace ReporteTray
         {
             _appIcon = System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath);
 
-            _http = new HttpClient { Timeout = TimeSpan.FromSeconds(3) };
+            _http = ApiAuth.CreateHttpClient();
 
             var menu = new ContextMenuStrip();
             menu.Items.Add("Generar reporte ahora", null, OnGenerateReportClicked);

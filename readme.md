@@ -1,6 +1,6 @@
 # Reporte Semanal de Productividad
 
-![Versión](https://img.shields.io/badge/versi%C3%B3n-2.0.0-blue)
+![Versión](https://img.shields.io/badge/versi%C3%B3n-2.0.2-blue)
 ![Plataformas](https://img.shields.io/badge/plataformas-Windows%20%7C%20Linux-informational)
 ![Lenguajes](https://img.shields.io/badge/lenguajes-TypeScript%20%7C%20C%23%20%7C%20Go-3178C6)
 ![Licencia](https://img.shields.io/badge/licencia-MIT-green)
@@ -22,12 +22,25 @@ El programa corre en segundo plano desde el arranque del sistema operativo, con 
 
 ## Descargas
 
-La última versión compilada está disponible en la sección de [Releases](https://github.com/usuario/reporte-semanal/releases) del repositorio.
+La última versión compilada está disponible en la sección de [Releases](https://github.com/JuanSebastianRondon/Reporte-Semanal/releases) del repositorio.
 
 | Archivo | Plataforma | Descripción |
 |---|---|---|
 | `ReporteSemanal-Setup.exe` | Windows 10/11 (x64) | Instalador guiado. No requiere permisos de administrador ni instalar Node.js. |
 | `install.sh` | Linux (x86_64) | Script de instalación con soporte para `systemd` de usuario. |
+
+### Publicación automática
+
+Los releases se publican al pushear un tag con formato `vX.Y.Z`:
+
+```powershell
+# 1. Actualizar la versión en package.json y packaging/windows/instalador.iss
+npm run version:check          # verifica que todo coincida con el tag
+git tag v2.0.1
+git push origin v2.0.1
+```
+
+El workflow `.github/workflows/release.yml` valida la versión, compila el backend y los clientes, genera el instalador de Windows y un `tar.gz` de Linux, y crea el release con notas automáticas y ambos archivos adjuntos.
 
 ---
 
@@ -41,7 +54,8 @@ La última versión compilada está disponible en la sección de [Releases](http
 
 **Linux:**
 - Distribución con soporte para `systemd` (Ubuntu, Debian, Fedora, Arch, etc.)
-- Node.js runtime instalado en el sistema (`node >= 18`)
+- Node.js runtime instalado en el sistema (`node >= 22`)
+- Opcional: `secret-tool` para guardar la contraseña en el llavero, `xprintidle` para detectar inactividad (X11)
 
 **Común:**
 - Cuenta de Gmail con verificación en dos pasos activa
@@ -53,6 +67,14 @@ La última versión compilada está disponible en la sección de [Releases](http
 2. Si no tienes la verificación en dos pasos activada, Google te pedirá activarla primero.
 3. Escribe un nombre para identificar la app (ej. "Reporte Semanal").
 4. Copia la contraseña de 16 caracteres generada y pégala en la pantalla de configuración.
+
+### Seguridad y privacidad
+
+- En Windows la contraseña se guarda **cifrada con DPAPI** del usuario (`EMAIL_PASS=dpapi:...`), escrita por `configuracion.exe`. En Linux se guarda en el llavero con `secret-tool` cuando está disponible; si no, se escribe en `.env` con permisos `0600`.
+- La API local (`localhost:4577`) exige la cabecera `X-Report-Token`. El token se genera automáticamente la primera vez en el archivo `.token` de la carpeta de datos; los clientes lo leen de ahí. Las peticiones sin token reciben `401`.
+- El timeout de inactividad (60 s) evita contar tiempo frente al PC sin interacción, y los huecos de más de 60 s (equipo suspendido) se descartan.
+- El reporte se envía cuando corresponde a la semana ISO del flag `.report-sent`. Si el equipo estuvo apagado el lunes, se envía en el primer arranque de esa semana, no se pierde.
+- Los reportes manuales **no reinician** el acumulado ni marcan la semana como enviada.
 
 ---
 
@@ -77,15 +99,17 @@ Reporte_semanal/
 │   │   ├── ReporteSemanal.sln
 │   │   ├── launcher/            ← Launcher.exe (inicia backend y bandeja)
 │   │   ├── tray/                ← ReporteTray.exe (icono en área de notificación)
-│   │   ├── configuracion/       ← configuracion.exe (formulario WinForms)
-│   │   └── control/             ← control.exe (panel de control manual)
+│   │   ├── configuracion/       ← configuracion.exe (credenciales cifradas con DPAPI)
+│   │   ├── control/             ← control.exe (panel de control manual)
+│   │   └── shared/              ← ApiAuth.cs (token de la API local)
 │   │
 │   └── linux/                   ← Clientes en Go
 │       ├── go.mod
+│       ├── internal/api/        ← Cliente HTTP con token
 │       └── cmd/
-│           ├── launcher/        ← Lanzador y supervisor del proceso Node
-│           ├── tray/            ← Indicador de bandeja (systray / AppIndicator)
-│           └── config/          ← Configurador de variables de entorno
+│           ├── launcher/        ← Lanzador del proceso Node
+│           ├── tray/            ← Monitor de estado por consola
+│           └── config/          ← Configurador (.env + llavero)
 │
 ├── packaging/                   ← Instaladores y servicios
 │   ├── windows/
@@ -96,16 +120,46 @@ Reporte_semanal/
 │
 ├── assets/                      ← Iconos y recursos gráficos
 ├── docs/                        ← Documentación técnica
+├── test/                        ← Pruebas unitarias (node:test)
+├── .github/                     ← CI (workflows) y Dependabot
 ├── runtime/                     ← Binarios de ejecución en Windows
 ├── package.json
 └── tsconfig.json
 ```
+
+### Mantener las dependencias actualizadas
+
+El repositorio incluye `.github/dependabot.yml` para que GitHub revise las dependencias npm cada lunes y proponga actualizaciones mediante pull requests, incluyendo nuevas versiones mayores. La configuración empieza a aplicarse al incorporarla a la rama predeterminada. Revisa y valida cada propuesta antes de integrarla.
+
+Conserva `package-lock.json` en el repositorio: registra las versiones exactas instaladas. Para instalar las versiones revisadas al clonar el proyecto, ejecuta `npm ci`.
+
+```powershell
+# Consultar versiones pendientes (código de salida 1 si hay actualizaciones)
+npm run deps:check
+
+# Actualizar dentro de los rangos permitidos y guardar los cambios
+npm run deps:update
+
+# Consultar vulnerabilidades conocidas, incluyendo dependencias indirectas
+npm run audit
+
+# Aplicar las correcciones compatibles disponibles
+npm audit fix
+
+# Verificar que el backend sigue compilando
+npm run build
+```
+
+Los rangos `^` permiten actualizaciones compatibles; no incluyen automáticamente nuevas versiones mayores. Dependabot puede proponer esos cambios en `package.json` y `package-lock.json`. Evita sustituir todos los rangos por `latest` o ejecutar `npm audit fix --force` sin revisar los cambios: pueden introducir incompatibilidades. Tener la última versión no garantiza que no existan vulnerabilidades.
+
+Para recibir también propuestas por vulnerabilidades detectadas, habilita **Dependabot alerts** y **Dependabot security updates** en la configuración de seguridad del repositorio en GitHub.
 
 ### Compilar el proyecto
 
 #### 1. Backend (común)
 ```bash
 npm run build
+npm test          # compila y ejecuta 13 pruebas con node:test
 ```
 
 #### 2. Clientes Windows (C#)
@@ -113,12 +167,9 @@ npm run build
 npm run build:windows
 ```
 
-Para actualizar los ejecutables distribuidos en raíz:
+Para actualizar los ejecutables distribuidos en raíz (script reproducible):
 ```powershell
-Copy-Item clients/windows/launcher/bin/Release/net48/Launcher.exe -Destination Launcher.exe
-Copy-Item clients/windows/tray/bin/Release/net48/ReporteTray.exe -Destination runtime/ReporteTray.exe
-Copy-Item clients/windows/configuracion/bin/Release/net48/Configuracion.exe -Destination configuracion.exe
-Copy-Item clients/windows/control/bin/Release/net48/control.exe -Destination control.exe
+npm run copy:windows
 ```
 
 #### 3. Instalador de Windows

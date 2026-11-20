@@ -8,6 +8,7 @@ Output/
 .report-sent
 data.json
 .lock
+.token
 
 # IDEs y herramientas
 .vscode/

@@ -11,23 +11,30 @@ export function generatePDF(metrics: WeeklyMetrics): Promise<string> {
     const dir = path.join(os.tmpdir(), 'ReporteSemanal');
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 
-    const filePath = path.join(dir, `report-${Date.now()}.pdf`);
+    const filePath = path.join(dir, `report-${Date.now()}-${process.pid}.pdf`);
     const stream = fs.createWriteStream(filePath);
 
     doc.pipe(stream);
 
     // ── Encabezado ───────────────────────────────────────
-    doc.rect(0, 0, 612, 100).fill('#90adec');
+    doc.rect(0, 0, 612, 112).fill('#90adec');
 
     doc
       .fontSize(24)
       .fillColor('#000000')
-      .text('Reporte Semanal de Productividad', 50, 30, { align: 'center' });
+      .text('Reporte Semanal de Productividad', 50, 26, { align: 'center' });
 
     doc
       .fontSize(11)
       .fillColor('#7890ad')
-      .text(`Total frente al PC: ${metrics.totalHours}`, 50, 65, { align: 'center' });
+      .text(`Total frente al PC: ${metrics.totalHours}`, 50, 60, { align: 'center' });
+
+    if (metrics.periodLabel) {
+      doc
+        .fontSize(9)
+        .fillColor('#7890ad')
+        .text(metrics.periodLabel, 50, 82, { align: 'center' });
+    }
 
     doc.moveDown(3);
 
@@ -46,37 +53,48 @@ export function generatePDF(metrics: WeeklyMetrics): Promise<string> {
     ];
 
     const topApps = metrics.apps.slice(0, 15);
-    const maxMinutes = topApps[0]?.minutes || 1;
 
-    topApps.forEach((app, i) => {
-      const rowY = doc.y;
-
+    if (!topApps.length) {
       doc
         .fontSize(11)
-        .fillColor('#111827')
-        .text(`${i + 1}. ${app.name}`, 50, rowY, { lineBreak: false });
-
-      const horas = (app.minutes / 60).toFixed(1);
-
-      doc
-        .fontSize(10)
         .fillColor('#6b7280')
-        .text(`${app.minutes} min (${horas}h)`, 420, rowY, { lineBreak: false });
+        .text('No se registró actividad en este período.', { align: 'center' });
+    } else {
+      const maxMinutes = topApps[0].minutes || 1;
 
-      if (app.minutes > 0) {
-        const barWidth = (app.minutes / maxMinutes) * 280;
-        doc.rect(50, rowY + 16, barWidth, 8).fill(colors[i]);
-      }
+      topApps.forEach((app, i) => {
+        const rowY = doc.y;
 
-      doc.y = rowY + 32;
-    });
+        doc
+          .fontSize(11)
+          .fillColor('#111827')
+          .text(`${i + 1}. ${app.name}`, 50, rowY, { lineBreak: false });
+
+        const horas = (app.minutes / 60).toFixed(1);
+
+        doc
+          .fontSize(10)
+          .fillColor('#6b7280')
+          .text(`${app.minutes} min (${horas}h)`, 420, rowY, { lineBreak: false });
+
+        if (app.minutes > 0) {
+          const barWidth = (app.minutes / maxMinutes) * 280;
+          doc.rect(50, rowY + 16, barWidth, 8).fill(colors[i]);
+        }
+
+        doc.y = rowY + 32;
+      });
+    }
 
     // ── Footer ───────────────────────────────────────────
     doc.moveDown(2);
     doc
       .fontSize(9)
       .fillColor('#9ca3af')
-      .text('Generado automáticamente con NestJS', { align: 'center' });
+      .text(
+        `Generado automáticamente con NestJS · ${new Date().toLocaleString('es-ES')}`,
+        { align: 'center' },
+      );
 
     doc.end();
 

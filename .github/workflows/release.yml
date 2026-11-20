@@ -1,0 +1,111 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  check-version:
+    name: Validar versión del tag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Tag, package.json e instalador deben coincidir
+        run: node scripts/check-version.js
+
+  windows-installer:
+    name: Compilar instalador de Windows
+    needs: check-version
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run build:windows
+      # El instalador toma los .exe de la raíz; hay que actualizarlos primero.
+      - run: npm run copy:windows
+      - name: Compilar instalador con Inno Setup
+        shell: pwsh
+        run: |
+          if (Get-Command iscc -ErrorAction SilentlyContinue) {
+            iscc packaging\windows\instalador.iss
+          } else {
+            choco install innosetup -y --no-progress
+            & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" packaging\windows\instalador.iss
+          }
+      - name: Subir instalador como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: Output/ReporteSemanal-Setup.exe
+          if-no-files-found: error
+          retention-days: 5
+
+  linux-bundle:
+    name: Compilar bundle de Linux
+    needs: check-version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache: false
+      - run: npm ci
+      - run: npm run build
+      - name: Compilar clientes Go y empaquetar
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release/linux/bin release/linux/packaging release/linux/clients
+          cp -r dist release/linux/dist
+          cp package.json .env.example release/linux/
+          cp -r packaging/linux release/linux/packaging/linux
+          cp -r clients/linux release/linux/clients/linux
+          (cd clients/linux && go build -o ../../release/linux/bin/launcher ./cmd/launcher)
+          (cd clients/linux && go build -o ../../release/linux/bin/monitor ./cmd/tray)
+          (cd clients/linux && go build -o ../../release/linux/bin/config ./cmd/config)
+          tar -czf "release/reporte-semanal-${GITHUB_REF_NAME}-linux.tar.gz" -C release/linux .
+      - name: Subir bundle como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-bundle
+          path: release/*.tar.gz
+          if-no-files-found: error
+          retention-days: 5
+
+  publish-release:
+    name: Publicar GitHub Release
+    needs: [windows-installer, linux-bundle]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Descargar artefactos
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Crear release y adjuntar archivos
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/windows-installer/ReporteSemanal-Setup.exe
+            artifacts/linux-bundle/*.tar.gz
+          generate_release_notes: true
+          draft: false
+          prerelease: false

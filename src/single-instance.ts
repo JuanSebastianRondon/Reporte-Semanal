@@ -1,13 +1,14 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { getAppDir } from './common/paths';
 
 /**
  * Garantiza que solo haya una instancia del backend corriendo.
  * Si detecta otra instancia viva, termina el proceso actual en silencio
  * (sin abrir el puerto 4577, sin spawnear un segundo tray).
- * Debe llamarse ANTES de crear la app de Nest.
+ * El enlace del puerto se valida además en main.ts (EADDRINUSE).
  */
-export function ensureSingleInstance(appDir: string): void {
+export function ensureSingleInstance(appDir: string = getAppDir()): void {
   const lockPath = path.join(appDir, '.lock');
 
   if (fs.existsSync(lockPath)) {
@@ -16,8 +17,7 @@ export function ensureSingleInstance(appDir: string): void {
     if (!isNaN(existingPid) && isProcessRunning(existingPid)) {
       process.exit(0);
     }
-    // El PID del lock no corresponde a ningún proceso vivo: es un lock
-    // huérfano de un crash o apagón anterior. Se sobreescribe y se sigue.
+    // Lock huérfano de un crash o apagón anterior: se sobreescribe.
   }
 
   if (!fs.existsSync(appDir)) {
@@ -44,8 +44,6 @@ export function ensureSingleInstance(appDir: string): void {
 
 function isProcessRunning(pid: number): boolean {
   try {
-    // process.kill con señal 0 no mata nada, solo pregunta si el proceso
-    // existe. En Windows funciona igual para este propósito.
     process.kill(pid, 0);
     return true;
   } catch {

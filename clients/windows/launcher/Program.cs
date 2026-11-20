@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
 using System.Windows.Forms;
+using ReporteSemanal.Shared;
 
 namespace ReporteLauncher
 {
@@ -59,7 +60,7 @@ namespace ReporteLauncher
         {
             try
             {
-                using (var client = new HttpClient{Timeout = TimeSpan.FromSeconds(2)})
+                using (var client = ApiAuth.CreateHttpClient())
                 {
                     var response = client.GetAsync(ApiUrl).Result;
                     return response.IsSuccessStatusCode;

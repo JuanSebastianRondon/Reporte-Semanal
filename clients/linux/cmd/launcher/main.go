@@ -7,13 +7,13 @@ import (
 	"os/exec"
 	"path/filepath"
 	"time"
+
+	"github.com/juanse/reporte-semanal-linux/internal/api"
 )
 
-const apiURL = "http://localhost:4577/status"
-
 func isBackendRunning() bool {
-	client := http.Client{Timeout: 1 * time.Second}
-	resp, err := client.Get(apiURL)
+	client := &http.Client{Timeout: time.Second}
+	resp, err := api.Request(client, http.MethodGet, "/status")
 	if err != nil {
 		return false
 	}
@@ -33,7 +33,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	appDir := filepath.Dir(filepath.Dir(filepath.Dir(execPath)))
+	// bin/launcher -> bin -> raíz del proyecto
+	appDir := filepath.Dir(filepath.Dir(execPath))
 	mainJs := filepath.Join(appDir, "dist", "main.js")
 
 	if _, err := os.Stat(mainJs); os.IsNotExist(err) {
@@ -53,4 +54,3 @@ func main() {
 
 	fmt.Printf("[Launcher] Backend iniciado correctamente (PID: %d)\n", cmd.Process.Pid)
 }
-

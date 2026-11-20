@@ -18,7 +18,8 @@ export class StatusController {
 
   @Post('app/quit')
   async quit() {
-    setImmediate(() => this.statusService.shutdown());
+    // Se responde primero y se cierra después (app.close() => tracker.flush()).
+    setImmediate(() => void this.statusService.shutdown());
     return { ok: true };
   }
 

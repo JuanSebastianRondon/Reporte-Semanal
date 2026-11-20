@@ -8,6 +8,6 @@ export class ReportsController {
   @Post('send')
   async sendReport() {
     await this.reportsService.sendWeeklyReport();
-    return { message: ' Reporte enviado correctamente' };
+    return { message: 'Reporte enviado correctamente' };
   }
 }

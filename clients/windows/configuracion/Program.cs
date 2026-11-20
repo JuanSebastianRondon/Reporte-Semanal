@@ -1,6 +1,7 @@
 using System;
 using System.Drawing;
 using System.IO;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
@@ -23,6 +24,7 @@ namespace ReporteConfiguracion
     {
         private const string RunRegistryKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
         private const string RunValueName = "ReporteSemanal";
+        private static readonly byte[] DpapiEntropy = Encoding.UTF8.GetBytes("reporte-semanal-v2");
 
         private readonly TextBox _inputCorreo;
         private readonly TextBox _inputPass;
@@ -49,7 +51,7 @@ namespace ReporteConfiguracion
                         if (matchUser.Success) correoExistente = matchUser.Groups[1].Value.Trim();
 
                         var matchPass = Regex.Match(line, @"^EMAIL_PASS=(.*)$");
-                        if (matchPass.Success) passExistente = matchPass.Groups[1].Value.Trim();
+                        if (matchPass.Success) passExistente = DecodePass(matchPass.Groups[1].Value.Trim());
                     }
                 }
                 catch { }
@@ -168,6 +170,39 @@ namespace ReporteConfiguracion
             AcceptButton = boton;
         }
 
+        /// <summary>Guarda la contraseña cifrada con DPAPI del usuario actual.</summary>
+        private static string ProtectPass(string pass)
+        {
+            try
+            {
+                var cifrado = ProtectedData.Protect(
+                    Encoding.UTF8.GetBytes(pass), DpapiEntropy, DataProtectionScope.CurrentUser);
+                return "dpapi:" + Convert.ToBase64String(cifrado);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "No se pudo cifrar la contraseña; se guardará en texto plano. " + ex.Message,
+                    "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return pass;
+            }
+        }
+
+        private static string DecodePass(string value)
+        {
+            if (!value.StartsWith("dpapi:")) return value;
+            try
+            {
+                var bytes = Convert.FromBase64String(value.Substring("dpapi:".Length));
+                return Encoding.UTF8.GetString(
+                    ProtectedData.Unprotect(bytes, DpapiEntropy, DataProtectionScope.CurrentUser));
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
         private void OnSaveClicked(object sender, EventArgs e)
         {
             var correo = _inputCorreo.Text.Trim();
@@ -185,7 +220,7 @@ namespace ReporteConfiguracion
             try
             {
                 var utf8NoBom = new UTF8Encoding(false);
-                var envContent = $"EMAIL_USER={correo}\nEMAIL_PASS={pass}\n";
+                var envContent = $"EMAIL_USER={correo}\nEMAIL_PASS={ProtectPass(pass)}\n";
                 File.WriteAllText(_envPath, envContent, utf8NoBom);
 
                 var dataPath = Path.Combine(_appDir, "data.json");

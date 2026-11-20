@@ -1,11 +1,11 @@
 [Setup]
 AppId={{61834A1B-73C4-479D-BD57-DB124D2F29A9}
 AppName=Reporte Semanal de Productividad
-AppVersion=2.0.0
+AppVersion=2.0.2
 AppPublisher=Juanse
-AppPublisherURL=https://github.com/juanse
-AppSupportURL=https://github.com/juanse
-AppUpdatesURL=https://github.com/juanse
+AppPublisherURL=https://github.com/JuanSebastianRondon/Reporte-Semanal
+AppSupportURL=https://github.com/JuanSebastianRondon/Reporte-Semanal
+AppUpdatesURL=https://github.com/JuanSebastianRondon/Reporte-Semanal/releases
 DefaultDirName={userappdata}\ReporteSemanal
 DisableDirPage=yes
 DisableProgramGroupPage=yes
@@ -20,12 +20,12 @@ WizardStyle=modern
 Compression=lzma2
 SolidCompression=yes
 
-VersionInfoVersion=2.0.0.0
+VersionInfoVersion=2.0.2.0
 VersionInfoCompany=Juanse
 VersionInfoDescription=Instalador de Reporte Semanal de Productividad
 VersionInfoCopyright=Copyright (C) 2026 Juanse
 VersionInfoProductName=Reporte Semanal de Productividad
-VersionInfoProductVersion=2.0.0
+VersionInfoProductVersion=2.0.2
 
 [Files]
 ; Backend Node.js
@@ -41,9 +41,10 @@ Source: "..\..\Launcher.exe";       DestDir: "{app}"; Flags: ignoreversion
 Source: "..\..\control.exe";        DestDir: "{app}"; Flags: ignoreversion
 Source: "..\..\configuracion.exe";  DestDir: "{app}"; Flags: ignoreversion
 
-[Icons]
-Name: "{userstartup}\Reporte Semanal"; Filename: "{app}\Launcher.exe"; \
-  IconFilename: "{app}\Launcher.exe"; Comment: "Inicia el Reporte Semanal de Productividad"
+[InstallDelete]
+; Autoarranque único: se gestiona con HKCU\...\Run desde configuracion.exe.
+; Se elimina el acceso directo de versiones anteriores para evitar duplicados.
+Type: files; Name: "{userstartup}\Reporte Semanal.lnk"
 
 [Run]
 ; Configurar correo y opciones al terminar la instalación
@@ -52,16 +53,13 @@ Filename: "{app}\configuracion.exe"; \
   Flags: nowait postinstall skipifsilent
 
 [UninstallRun]
-; Matar procesos antes de desinstalar (sin PowerShell para evitar falsos positivos AV)
+; Se cierra el Tray por su nombre (es un ejecutable propio). El proceso Node
+; se termina por PID leyendo .lock en [Code], para no matar otros Node del sistema.
 Filename: "{sys}\taskkill.exe"; \
   Parameters: "/F /IM ReporteTray.exe /T"; \
   Flags: runhidden; RunOnceId: "MatarTray"
 
-Filename: "{sys}\taskkill.exe"; \
-  Parameters: "/F /IM node.exe /T"; \
-  Flags: runhidden; RunOnceId: "MatarNode"
-
-; Eliminar entrada del registro de autoarranque
+; Limpieza de la entrada de autoarranque (puede venir de versiones anteriores)
 Filename: "{sys}\reg.exe"; \
   Parameters: "delete ""HKCU\Software\Microsoft\Windows\CurrentVersion\Run"" /v ReporteSemanal /f"; \
   Flags: runhidden; RunOnceId: "BorrarRegistro"
@@ -91,3 +89,20 @@ begin
   end;
 end;
 
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  lockPath: string;
+  pidText: string;
+  exitCode: Integer;
+begin
+  if CurUninstallStep <> usUninstall then Exit;
+
+  lockPath := ExpandConstant('{app}\.lock');
+  if not FileExists(lockPath) then Exit;
+
+  pidText := Trim(FileToString(lockPath));
+  if (pidText = '') or (StrToIntDef(pidText, 0) <= 0) then Exit;
+
+  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /PID ' + pidText + ' /T',
+    '', SW_HIDE, ewWaitUntilTerminated, exitCode);
+end;

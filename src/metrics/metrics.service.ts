@@ -1,16 +1,26 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
+import { getAppDir } from '../common/paths';
 
 export interface WeeklyMetrics {
   apps: { name: string; minutes: number }[];
   totalHours: string;
+  periodLabel?: string;
 }
 
 @Injectable()
 export class MetricsService {
   private readonly logger = new Logger(MetricsService.name);
-  private readonly dataPath = path.join(__dirname, '..', '..', 'data.json');
+  private readonly dataPath: string;
+
+  constructor(
+    @Optional()
+    @Inject('DATA_FILE_PATH')
+    dataPathOverride?: string,
+  ) {
+    this.dataPath = dataPathOverride || path.join(getAppDir(), 'data.json');
+  }
 
   getWeeklyMetrics(): WeeklyMetrics {
     let raw: { apps?: Record<string, number>; totalSeconds?: number } = { apps: {}, totalSeconds: 0 };

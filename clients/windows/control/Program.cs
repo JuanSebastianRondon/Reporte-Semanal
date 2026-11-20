@@ -3,6 +3,7 @@ using System.Drawing;
 using System.IO;
 using System.Net.Http;
 using System.Windows.Forms;
+using ReporteSemanal.Shared;
 
 namespace ReporteControl
 {
@@ -85,7 +86,7 @@ namespace ReporteControl
         {
             try
             {
-                using (var client = new HttpClient { Timeout = TimeSpan.FromSeconds(2) })
+                using (var client = ApiAuth.CreateHttpClient())
                 {
                     var response = client.GetAsync($"{ApiUrl}/status").Result;
                     return response.IsSuccessStatusCode;
@@ -103,7 +104,7 @@ namespace ReporteControl
             {
                 try
                 {
-                    using (var client = new HttpClient { Timeout = TimeSpan.FromSeconds(3) })
+                    using (var client = ApiAuth.CreateHttpClient())
                     {
                         var response = client.PostAsync($"{ApiUrl}/app/quit", null).Result;
                     }

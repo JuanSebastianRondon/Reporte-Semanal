@@ -1,31 +1,43 @@
 #!/usr/bin/env bash
-set -e
+set -euo pipefail
 
-INSTALL_DIR="$HOME/.local/share/reporte-semanal"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SRC_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+INSTALL_DIR="${REPORTE_HOME:-$HOME/.local/share/reporte-semanal}"
 SYSTEMD_DIR="$HOME/.config/systemd/user"
 
 echo "=== Instalador de Reporte Semanal para Linux ==="
 
-# 1. Crear directorios
-mkdir -p "$INSTALL_DIR"
-mkdir -p "$SYSTEMD_DIR"
+mkdir -p "$INSTALL_DIR" "$SYSTEMD_DIR"
 
-# 2. Copiar archivos del backend
 echo "Copiando archivos a $INSTALL_DIR..."
-cp -r ../../dist "$INSTALL_DIR/"
-cp -r ../../node_modules "$INSTALL_DIR/"
-cp ../../package.json "$INSTALL_DIR/"
-[ -f ../../.env ] && cp ../../.env "$INSTALL_DIR/"
+cp -r "$SRC_DIR/dist" "$INSTALL_DIR/"
+cp -r "$SRC_DIR/node_modules" "$INSTALL_DIR/"
+cp "$SRC_DIR/package.json" "$INSTALL_DIR/"
+if [ -f "$SRC_DIR/.env" ]; then
+  install -m 600 "$SRC_DIR/.env" "$INSTALL_DIR/.env"
+fi
 
-# 3. Instalar servicio systemd de usuario
+if command -v go >/dev/null 2>&1; then
+  echo "Compilando clientes Go..."
+  mkdir -p "$INSTALL_DIR/bin"
+  (
+    cd "$SRC_DIR/clients/linux"
+    go build -o "$INSTALL_DIR/bin/launcher" ./cmd/launcher
+    go build -o "$INSTALL_DIR/bin/monitor" ./cmd/tray
+    go build -o "$INSTALL_DIR/bin/config" ./cmd/config
+  )
+else
+  echo "[Aviso] Go no está instalado: los clientes nativos no se compilarán."
+fi
+
 echo "Configurando servicio systemd de usuario..."
-cp reporte-semanal.service "$SYSTEMD_DIR/"
+cp "$SCRIPT_DIR/reporte-semanal.service" "$SYSTEMD_DIR/"
 systemctl --user daemon-reload
 systemctl --user enable reporte-semanal.service
 systemctl --user restart reporte-semanal.service
 
 echo ""
 echo "=== Instalación completada ==="
-echo "El servicio se encuentra corriendo bajo systemd."
-echo "Para ver el estado: systemctl --user status reporte-semanal.service"
-
+echo "Estado: systemctl --user status reporte-semanal.service"
+echo "Configuración: $INSTALL_DIR/bin/config"
