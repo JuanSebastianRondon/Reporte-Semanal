@@ -92,6 +92,7 @@ end;
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 var
   lockPath: string;
+  ansiPid: AnsiString;
   pidText: string;
   exitCode: Integer;
 begin
@@ -99,8 +100,9 @@ begin
 
   lockPath := ExpandConstant('{app}\.lock');
   if not FileExists(lockPath) then Exit;
+  if not LoadStringFromFile(lockPath, ansiPid) then Exit;
 
-  pidText := Trim(FileToString(lockPath));
+  pidText := Trim(String(ansiPid));
   if (pidText = '') or (StrToIntDef(pidText, 0) <= 0) then Exit;
 
   Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /PID ' + pidText + ' /T',

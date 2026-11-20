@@ -6,6 +6,8 @@ on:
       - 'v*'
   # Red de seguridad: permite publicar manualmente desde la pestaña Actions
   # si GitHub no dispara el evento de tag (p. ej. al subir commit + tag juntos).
+  # En dispatch manual se compila desde la rama elegida y se publica sobre el
+  # tag indicado; en push de tag se compila desde el propio tag.
   workflow_dispatch:
     inputs:
       tag:
@@ -23,7 +25,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.tag || github.ref_name }}
+          ref: ${{ github.ref_name }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -37,7 +39,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.tag || github.ref_name }}
+          ref: ${{ github.ref_name }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -71,7 +73,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.tag || github.ref_name }}
+          ref: ${{ github.ref_name }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
