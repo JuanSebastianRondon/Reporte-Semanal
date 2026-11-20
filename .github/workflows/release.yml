@@ -4,6 +4,14 @@ on:
   push:
     tags:
       - 'v*'
+  # Red de seguridad: permite publicar manualmente desde la pestaña Actions
+  # si GitHub no dispara el evento de tag (p. ej. al subir commit + tag juntos).
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag a publicar (ej. v2.0.2)'
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -14,11 +22,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref_name }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
       - name: Tag, package.json e instalador deben coincidir
-        run: node scripts/check-version.js
+        run: node scripts/check-version.js "${{ inputs.tag || github.ref_name }}"
 
   windows-installer:
     name: Compilar instalador de Windows
@@ -26,6 +36,8 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref_name }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -58,6 +70,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref_name }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -70,6 +84,8 @@ jobs:
       - run: npm run build
       - name: Compilar clientes Go y empaquetar
         shell: bash
+        env:
+          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
         run: |
           set -euo pipefail
           mkdir -p release/linux/bin release/linux/packaging release/linux/clients
@@ -80,7 +96,7 @@ jobs:
           (cd clients/linux && go build -o ../../release/linux/bin/launcher ./cmd/launcher)
           (cd clients/linux && go build -o ../../release/linux/bin/monitor ./cmd/tray)
           (cd clients/linux && go build -o ../../release/linux/bin/config ./cmd/config)
-          tar -czf "release/reporte-semanal-${GITHUB_REF_NAME}-linux.tar.gz" -C release/linux .
+          tar -czf "release/reporte-semanal-${RELEASE_TAG}-linux.tar.gz" -C release/linux .
       - name: Subir bundle como artefacto
         uses: actions/upload-artifact@v4
         with:
@@ -103,6 +119,7 @@ jobs:
       - name: Crear release y adjuntar archivos
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ inputs.tag || github.ref_name }}
           files: |
             artifacts/windows-installer/ReporteSemanal-Setup.exe
             artifacts/linux-bundle/*.tar.gz

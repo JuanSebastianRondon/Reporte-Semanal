@@ -31,16 +31,25 @@ La última versión compilada está disponible en la sección de [Releases](http
 
 ### Publicación automática
 
-Los releases se publican al pushear un tag con formato `vX.Y.Z`:
+Los releases se publican con un tag `vX.Y.Z`. **Importante:** sube el commit y el tag en **dos push separados**. Si usas `git push --follow-tags`, GitHub puede registrar solo el evento de rama (CI) y no el de tag (Release).
 
 ```powershell
-# 1. Actualizar la versión en package.json y packaging/windows/instalador.iss
+# 1. Actualizar la versión en package.json, instalador.iss y los .csproj
 npm run version:check          # verifica que todo coincida con el tag
-git tag v2.0.1
-git push origin v2.0.1
+
+# 2. Subir primero el commit
+git add -A
+git commit -m "chore: release v2.0.2"
+git push origin HEAD
+
+# 3. Luego subir el tag, en un push aparte
+git tag -a v2.0.2 -m "Release v2.0.2"
+git push origin v2.0.2
 ```
 
-El workflow `.github/workflows/release.yml` valida la versión, compila el backend y los clientes, genera el instalador de Windows y un `tar.gz` de Linux, y crea el release con notas automáticas y ambos archivos adjuntos.
+Si por cualquier motivo el release no se crea, entra en **Actions → Release → Run workflow**, selecciona la rama `main` y escribe el tag (por ejemplo `v2.0.2`). El workflow también admite este disparo manual.
+
+El workflow valida la versión, compila el backend y los clientes, genera el instalador de Windows y un `tar.gz` de Linux, y crea el release con notas automáticas y ambos archivos adjuntos.
 
 ---
 
