@@ -32,7 +32,7 @@
   "author": "Juanse",
   "license": "MIT",
   "dependencies": {
-    "@nestjs/common": "^11.2.10",
+    "@nestjs/common": "^12.5.1",
     "@nestjs/core": "^11.2.10",
     "@nestjs/platform-express": "^11.2.10",
     "@nestjs/schedule": "^6.1.3",
