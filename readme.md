@@ -29,29 +29,6 @@ La última versión compilada está disponible en la sección de [Releases](http
 | `ReporteSemanal-Setup.exe` | Windows 10/11 (x64) | Instalador guiado. No requiere permisos de administrador ni instalar Node.js. |
 | `install.sh` | Linux (x86_64) | Script de instalación con soporte para `systemd` de usuario. |
 
-### Publicación automática
-
-Los releases se publican con un tag `vX.Y.Z`. **Importante:** sube el commit y el tag en **dos push separados**. Si usas `git push --follow-tags`, GitHub puede registrar solo el evento de rama (CI) y no el de tag (Release).
-
-```powershell
-# 1. Actualizar la versión en package.json, instalador.iss y los .csproj
-npm run version:check          # verifica que todo coincida con el tag
-
-# 2. Subir primero el commit
-git add -A
-git commit -m "chore: release v2.0.2"
-git push origin HEAD
-
-# 3. Luego subir el tag, en un push aparte
-git tag -a v2.0.2 -m "Release v2.0.2"
-git push origin v2.0.2
-```
-
-Si por cualquier motivo el release no se crea, entra en **Actions → Release → Run workflow**, selecciona la rama `main` y escribe el tag (por ejemplo `v2.0.2`). El workflow también admite este disparo manual.
-
-El workflow valida la versión, compila el backend y los clientes, genera el instalador de Windows y un `tar.gz` de Linux, y crea el release con notas automáticas y ambos archivos adjuntos.
-
----
 
 ## Para usuarios
 
@@ -158,10 +135,6 @@ npm audit fix
 # Verificar que el backend sigue compilando
 npm run build
 ```
-
-Los rangos `^` permiten actualizaciones compatibles; no incluyen automáticamente nuevas versiones mayores. Dependabot puede proponer esos cambios en `package.json` y `package-lock.json`. Evita sustituir todos los rangos por `latest` o ejecutar `npm audit fix --force` sin revisar los cambios: pueden introducir incompatibilidades. Tener la última versión no garantiza que no existan vulnerabilidades.
-
-Para recibir también propuestas por vulnerabilidades detectadas, habilita **Dependabot alerts** y **Dependabot security updates** en la configuración de seguridad del repositorio en GitHub.
 
 ### Compilar el proyecto
 
