@@ -1,6 +1,6 @@
 # Reporte Semanal de Productividad
 
-![Versión](https://img.shields.io/badge/versi%C3%B3n-2.0.2-blue)
+![Versión](https://img.shields.io/badge/versi%C3%B3n-2.0.3-blue)
 ![Plataformas](https://img.shields.io/badge/plataformas-Windows%20%7C%20Linux-informational)
 ![Lenguajes](https://img.shields.io/badge/lenguajes-TypeScript%20%7C%20C%23%20%7C%20Go-3178C6)
 ![Licencia](https://img.shields.io/badge/licencia-MIT-green)

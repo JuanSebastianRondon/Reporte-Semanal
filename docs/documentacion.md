@@ -1,4 +1,4 @@
-# Documentación Técnica - Reporte Semanal de Productividad (v2.0.2)
+# Documentación Técnica - Reporte Semanal de Productividad (v2.0.3)
 
 ---
 
@@ -77,7 +77,8 @@ En `%APPDATA%\ReporteSemanal` (instalación) o raíz del proyecto (desarrollo):
 
 - **`data.json`**: acumulado en segundos por aplicación (`{"apps":{"chrome.exe":1200},"totalSeconds":1200}`).
 - **`.report-sent`**: semana ISO del último envío automático (`2026-W47`). Acepta el formato antiguo (`Mon Nov 09 2026`) para migrar.
-- **`.env`**: `EMAIL_USER`, `EMAIL_PASS` (`dpapi:...` / `keyring:` / legado) y `REPORT_RECEIVER` opcional.
+- **`.env`**: `EMAIL_USER`, `EMAIL_PASS` (`dpapi:...` / `keyring:` / legado), `REPORT_RECEIVER` opcional y `REPORT_PDF_PALETTE` (`oceano`, `azul` o `grafito`; default `oceano`) para elegir los colores del PDF.
+- **Vista previa de paletas**: `npm run preview:pdf` genera un `index.html` con muestras de colores y un PDF de ejemplo por paleta en la carpeta temporal del sistema.
 - **`.lock`**: PID del proceso en ejecución. El desinstalador lo lee para matar **sólo** ese proceso.
 - **`.token`**: token hexadecimal de 64 caracteres para la API local (0600 en sistemas POSIX).
 

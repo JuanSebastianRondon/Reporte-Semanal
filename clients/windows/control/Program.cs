@@ -1,7 +1,7 @@
 using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
-using System.Net.Http;
 using System.Windows.Forms;
 using ReporteSemanal.Shared;
 
@@ -14,20 +14,39 @@ namespace ReporteControl
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+            Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
+
+            AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
+                MessageBox.Show(
+                    "Error no controlado:\n\n" + e.ExceptionObject,
+                    "Reporte Semanal",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error
+                );
+
+            Application.ThreadException += (sender, e) =>
+                MessageBox.Show(
+                    "Error no controlado:\n\n" + e.Exception.Message,
+                    "Reporte Semanal",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error
+                );
+
             Application.Run(new ControlForm());
         }
     }
 
     public class ControlForm : Form
     {
-        private const string ApiUrl = "http://localhost:4577";
         private readonly string _appDir;
-        private readonly bool _corriendo;
+        private bool _corriendo;
+        private Label _labelEstado;
+        private Button _boton;
 
         public ControlForm()
         {
             _appDir = AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\', '/');
-            _corriendo = IsBackendRunning();
+            _corriendo = ApiAuth.IsBackendRunning();
 
             Text = "Reporte Semanal - Control";
             ClientSize = new Size(320, 160);
@@ -35,6 +54,7 @@ namespace ReporteControl
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
             BackColor = Color.FromArgb(45, 43, 61);
+            Shown += (sender, e) => { Activate(); BringToFront(); };
 
             try
             {
@@ -53,60 +73,57 @@ namespace ReporteControl
             };
             Controls.Add(labelTitulo);
 
-            var labelEstado = new Label
+            _labelEstado = new Label
             {
                 Font = new Font("Segoe UI", 9),
                 BackColor = Color.Transparent,
                 Size = new Size(280, 20),
-                Location = new Point(20, 48),
-                Text = _corriendo ? "Estado: Activo" : "Estado: Inactivo",
-                ForeColor = _corriendo ? Color.FromArgb(134, 239, 172) : Color.FromArgb(252, 165, 165)
+                Location = new Point(20, 48)
             };
-            Controls.Add(labelEstado);
+            Controls.Add(_labelEstado);
 
-            var boton = new Button
+            _boton = new Button
             {
-                Text = _corriendo ? "Apagar" : "Encender",
                 Font = new Font("Segoe UI", 10, FontStyle.Bold),
                 Location = new Point(20, 85),
                 Size = new Size(280, 40),
                 FlatStyle = FlatStyle.Flat,
                 ForeColor = Color.FromArgb(232, 238, 245),
-                BackColor = _corriendo ? Color.FromArgb(45, 43, 61) : Color.FromArgb(61, 80, 128),
                 Cursor = Cursors.Hand
             };
-            boton.FlatAppearance.BorderColor = Color.FromArgb(232, 238, 245);
-            boton.Click += OnToggleClicked;
-            Controls.Add(boton);
+            _boton.FlatAppearance.BorderColor = Color.FromArgb(232, 238, 245);
+            _boton.Click += OnToggleClicked;
+            Controls.Add(_boton);
 
-            AcceptButton = boton;
+            AcceptButton = _boton;
+            ActualizarEstado();
         }
 
-        private static bool IsBackendRunning()
+        private void ActualizarEstado()
         {
-            try
-            {
-                using (var client = ApiAuth.CreateHttpClient())
-                {
-                    var response = client.GetAsync($"{ApiUrl}/status").Result;
-                    return response.IsSuccessStatusCode;
-                }
-            }
-            catch
-            {
-                return false;
-            }
+            _labelEstado.Text = _corriendo ? "Estado: Activo" : "Estado: Inactivo";
+            _labelEstado.ForeColor = _corriendo
+                ? Color.FromArgb(134, 239, 172)
+                : Color.FromArgb(252, 165, 165);
+            _boton.Text = _corriendo ? "Apagar" : "Encender";
+            _boton.BackColor = _corriendo
+                ? Color.FromArgb(45, 43, 61)
+                : Color.FromArgb(61, 80, 128);
         }
 
         private void OnToggleClicked(object sender, EventArgs e)
         {
+            // El estado pudo cambiar mientras el formulario estaba abierto.
+            _corriendo = ApiAuth.IsBackendRunning();
+            ActualizarEstado();
+
             if (_corriendo)
             {
                 try
                 {
                     using (var client = ApiAuth.CreateHttpClient())
                     {
-                        var response = client.PostAsync($"{ApiUrl}/app/quit", null).Result;
+                        var response = client.PostAsync("http://localhost:4577/app/quit", null).Result;
                     }
                     MessageBox.Show("Programa apagado.", "Listo", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
@@ -114,20 +131,54 @@ namespace ReporteControl
                 {
                     MessageBox.Show("No se pudo apagar. Puede que ya estuviera detenido.", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
+                Close();
+                return;
             }
-            else
+
+            var launcher = Path.Combine(_appDir, "Launcher.exe");
+            if (!File.Exists(launcher))
             {
-                var launcher = Path.Combine(_appDir, "Launcher.exe");
-                if (File.Exists(launcher))
-                {
-                    System.Diagnostics.Process.Start(launcher);
-                    MessageBox.Show("Programa encendido.", "Listo", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-                else
-                {
-                    MessageBox.Show("No se encontró Launcher.exe en esta carpeta.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
+                MessageBox.Show("No se encontró Launcher.exe en esta carpeta.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
             }
+
+            try
+            {
+                var info = new ProcessStartInfo
+                {
+                    FileName = launcher,
+                    Arguments = "--silent",
+                    WorkingDirectory = _appDir,
+                    UseShellExecute = true
+                };
+                Process.Start(info);
+
+                if (!ApiAuth.WaitForBackend(ApiAuth.StartupTimeout))
+                {
+                    MessageBox.Show(
+                        "El servicio no respondió al iniciar. Revise que el puerto 4577 esté libre.",
+                        "Error",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error
+                    );
+                    return;
+                }
+
+                _corriendo = true;
+                ActualizarEstado();
+                MessageBox.Show("Programa encendido.", "Listo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "No se pudo encender el servicio:\n\n" + ex.Message,
+                    "Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error
+                );
+                return;
+            }
+
             Close();
         }
     }

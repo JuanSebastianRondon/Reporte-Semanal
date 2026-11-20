@@ -1,4 +1,4 @@
-# Comandos Útiles - Reporte Semanal v2.0.2
+# Comandos Útiles - Reporte Semanal v2.0.3
 
 ### Desarrollo y Ejecución
 ```powershell

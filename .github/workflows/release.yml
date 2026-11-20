@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag a publicar (ej. v2.0.2)'
+        description: 'Tag a publicar (ej. v2.0.3)'
         required: true
         type: string
 
