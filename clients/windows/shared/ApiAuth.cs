@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Threading;
 
@@ -9,23 +10,27 @@ namespace ReporteSemanal.Shared
     /// <summary>
     /// Construye un HttpClient que envía el token local exigido por la API.
     /// El token lo genera el backend en el archivo .token de la carpeta raíz.
+    /// Se resuelve una sola vez por proceso (y se reintenta solo si la API
+    /// responde 401) para no lanzar netstat.exe en cada sondeo.
     /// </summary>
     internal static class ApiAuth
     {
         private const int ApiPort = 4577;
+        private const string TokenHeader = "X-Report-Token";
+
         internal const string StatusUrl = "http://localhost:4577/status";
         internal static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(5);
         internal static readonly TimeSpan ProbeTimeout = TimeSpan.FromSeconds(1);
         internal static readonly TimeSpan StartupTimeout = TimeSpan.FromSeconds(30);
 
+        private static readonly object TokenLock = new object();
+        private static string _cachedToken = string.Empty;
+        private static bool _tokenLoaded;
+
         internal static HttpClient CreateHttpClient(TimeSpan? timeout = null)
         {
             var client = new HttpClient { Timeout = timeout ?? RequestTimeout };
-            var token = ReadToken();
-            if (!string.IsNullOrEmpty(token))
-            {
-                client.DefaultRequestHeaders.Add("X-Report-Token", token);
-            }
+            SetTokenHeader(client, GetToken(false));
             return client;
         }
 
@@ -35,11 +40,45 @@ namespace ReporteSemanal.Shared
         /// </summary>
         internal static bool IsBackendRunning(TimeSpan? timeout = null)
         {
+            var probeTimeout = timeout ?? ProbeTimeout;
+            using (var client = CreateHttpClient(probeTimeout))
+            {
+                return Probe(client, true);
+            }
+        }
+
+        /// <summary>
+        /// Espera hasta que el backend responda /status o se agote el tiempo.
+        /// Reutiliza el mismo HttpClient y el mismo token durante toda la espera.
+        /// </summary>
+        internal static bool WaitForBackend(TimeSpan? timeout = null)
+        {
+            var limit = timeout ?? StartupTimeout;
+            var watch = Stopwatch.StartNew();
+
+            using (var client = CreateHttpClient(ProbeTimeout))
+            {
+                while (true)
+                {
+                    if (Probe(client, true)) return true;
+                    if (watch.Elapsed >= limit) return false;
+                    Thread.Sleep(400);
+                }
+            }
+        }
+
+        private static bool Probe(HttpClient client, bool allowTokenRefresh)
+        {
             try
             {
-                using (var client = CreateHttpClient(timeout ?? ProbeTimeout))
+                using (var response = client.GetAsync(StatusUrl).GetAwaiter().GetResult())
                 {
-                    var response = client.GetAsync(StatusUrl).Result;
+                    if (response.StatusCode == HttpStatusCode.Unauthorized && allowTokenRefresh)
+                    {
+                        SetTokenHeader(client, GetToken(true));
+                        return Probe(client, false);
+                    }
+
                     return response.IsSuccessStatusCode;
                 }
             }
@@ -49,20 +88,25 @@ namespace ReporteSemanal.Shared
             }
         }
 
-        /// <summary>
-        /// Espera hasta que el backend responda /status o se agote el tiempo.
-        /// Se usa para no dar por encendido el servicio antes de que escuche.
-        /// </summary>
-        internal static bool WaitForBackend(TimeSpan? timeout = null)
+        private static void SetTokenHeader(HttpClient client, string token)
         {
-            var limit = timeout ?? StartupTimeout;
-            var watch = Stopwatch.StartNew();
-
-            while (true)
+            client.DefaultRequestHeaders.Remove(TokenHeader);
+            if (!string.IsNullOrEmpty(token))
             {
-                if (IsBackendRunning()) return true;
-                if (watch.Elapsed >= limit) return false;
-                Thread.Sleep(400);
+                client.DefaultRequestHeaders.Add(TokenHeader, token);
+            }
+        }
+
+        private static string GetToken(bool refresh)
+        {
+            lock (TokenLock)
+            {
+                if (!_tokenLoaded || refresh)
+                {
+                    _cachedToken = ReadToken();
+                    _tokenLoaded = true;
+                }
+                return _cachedToken;
             }
         }
 

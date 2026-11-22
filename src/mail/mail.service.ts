@@ -6,22 +6,36 @@ import { SecretsService } from '../secrets/secrets.service';
 export class MailService {
   private readonly logger = new Logger(MailService.name);
 
+  private transporter: nodemailer.Transporter | null = null;
+
   constructor(private readonly secretsService: SecretsService) {}
 
-  async sendReportEmail(pdfPath: string): Promise<void> {
+  /** Reutiliza el mismo transporter en los reintentos del envío semanal. */
+  private async getTransporter(): Promise<nodemailer.Transporter> {
+    if (this.transporter) return this.transporter;
+
     const user = process.env.EMAIL_USER;
     if (!user) {
       throw new Error('EMAIL_USER no configurado.');
     }
     const pass = await this.secretsService.getEmailPass();
 
-    const transporter = nodemailer.createTransport({
+    this.transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: { user, pass },
       connectionTimeout: 20000,
       greetingTimeout: 20000,
       socketTimeout: 30000,
     });
+    return this.transporter;
+  }
+
+  async sendReportEmail(pdf: Buffer): Promise<void> {
+    const user = process.env.EMAIL_USER;
+    if (!user) {
+      throw new Error('EMAIL_USER no configurado.');
+    }
+    const transporter = await this.getTransporter();
 
     await transporter.sendMail({
       from: user,
@@ -31,7 +45,8 @@ export class MailService {
       attachments: [
         {
           filename: 'reporte-semanal.pdf',
-          path: pdfPath,
+          content: pdf,
+          contentType: 'application/pdf',
         },
       ],
     });

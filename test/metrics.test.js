@@ -41,7 +41,7 @@ test('generatePDF incluye la etiqueta del período y el estado vacío', async ()
     totalHours: '0.0h',
     periodLabel: '2026-W47 · 16 nov – 22 nov',
   });
-  assert.ok(fs.existsSync(pdf));
-  assert.ok(fs.statSync(pdf).size > 1000);
-  fs.unlinkSync(pdf);
+  assert.ok(Buffer.isBuffer(pdf));
+  assert.ok(pdf.length > 1000);
+  assert.equal(pdf.subarray(0, 4).toString(), '%PDF');
 });

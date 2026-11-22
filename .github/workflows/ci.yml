@@ -16,7 +16,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      - run: npm test
+      # npm test ya ejecuta build; aquí se evita compilar dos veces.
+      - run: node --test "test/*.test.js"
       - run: npm audit --audit-level=high
 
   windows-clients:

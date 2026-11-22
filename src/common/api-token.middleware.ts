@@ -10,16 +10,15 @@ import { getAppDir } from './paths';
  */
 @Injectable()
 export class ApiTokenMiddleware implements NestMiddleware {
-  private readonly token = ensureApiToken(getAppDir());
+  private readonly expected = Buffer.from(ensureApiToken(getAppDir()));
 
   use(req: any, res: any, next: () => void): void {
     const provided = String(req.get ? req.get(API_TOKEN_HEADER) : '');
 
     const received = Buffer.from(provided);
-    const expected = Buffer.from(this.token);
     const valid =
-      received.length === expected.length &&
-      crypto.timingSafeEqual(received, expected);
+      received.length === this.expected.length &&
+      crypto.timingSafeEqual(received, this.expected);
 
     if (!valid) {
       res.status(401).json({ error: 'No autorizado' });

@@ -15,8 +15,17 @@ const DPAPI_ENTROPY = 'reporte-semanal-v2';
 export class SecretsService {
   private readonly logger = new Logger(SecretsService.name);
   private warnedPlainText = false;
+  private cachedPass: string | null = null;
 
+  /** El secreto no cambia durante la vida del proceso: se descifra una sola vez. */
   async getEmailPass(): Promise<string> {
+    if (this.cachedPass !== null) return this.cachedPass;
+    const pass = await this.resolveEmailPass();
+    this.cachedPass = pass;
+    return pass;
+  }
+
+  private async resolveEmailPass(): Promise<string> {
     const raw = (process.env.EMAIL_PASS || '').trim();
     if (!raw) {
       throw new Error(

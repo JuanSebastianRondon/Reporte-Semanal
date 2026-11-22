@@ -53,7 +53,7 @@ function swatches(palette) {
     process.env.REPORT_PDF_PALETTE = key;
     const generated = await generatePDF(sampleMetrics());
     const preview = path.join(outDir, `${key}.pdf`);
-    fs.copyFileSync(generated, preview);
+    fs.writeFileSync(preview, generated);
 
     cards.push(`
       <article>

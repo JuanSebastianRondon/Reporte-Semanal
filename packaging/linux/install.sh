@@ -18,17 +18,21 @@ if [ -f "$SRC_DIR/.env" ]; then
   install -m 600 "$SRC_DIR/.env" "$INSTALL_DIR/.env"
 fi
 
-if command -v go >/dev/null 2>&1; then
-  echo "Compilando clientes Go..."
+if [ -x "$SRC_DIR/bin/launcher" ] && [ -x "$SRC_DIR/bin/monitor" ] && [ -x "$SRC_DIR/bin/config" ]; then
+  echo "Usando clientes Go incluidos en el paquete..."
+  mkdir -p "$INSTALL_DIR/bin"
+  cp -f "$SRC_DIR/bin/"* "$INSTALL_DIR/bin/"
+elif command -v go >/dev/null 2>&1 && [ -d "$SRC_DIR/clients/linux" ]; then
+  echo "Compilando clientes Go desde el código fuente..."
   mkdir -p "$INSTALL_DIR/bin"
   (
     cd "$SRC_DIR/clients/linux"
-    go build -o "$INSTALL_DIR/bin/launcher" ./cmd/launcher
-    go build -o "$INSTALL_DIR/bin/monitor" ./cmd/tray
-    go build -o "$INSTALL_DIR/bin/config" ./cmd/config
+    go build -trimpath -ldflags='-s -w' -o "$INSTALL_DIR/bin/launcher" ./cmd/launcher
+    go build -trimpath -ldflags='-s -w' -o "$INSTALL_DIR/bin/monitor" ./cmd/tray
+    go build -trimpath -ldflags='-s -w' -o "$INSTALL_DIR/bin/config" ./cmd/config
   )
 else
-  echo "[Aviso] Go no está instalado: los clientes nativos no se compilarán."
+  echo "[Aviso] No hay clientes Go preconstruidos ni código fuente con Go disponible."
 fi
 
 echo "Configurando servicio systemd de usuario..."

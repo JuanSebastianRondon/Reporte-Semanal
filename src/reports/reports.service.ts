@@ -6,7 +6,6 @@ import { getAppDir } from '../common/paths';
 import { MailService } from '../mail/mail.service';
 import { MetricsService } from '../metrics/metrics.service';
 import { TrackerService } from '../tracker/tracker.service';
-import { generatePDF } from './templates/pdf.template';
 import { getWeekKey, getWeekRangeLabel, isDueForWeeklyReport } from './week';
 
 @Injectable()
@@ -104,19 +103,11 @@ export class ReportsService implements OnModuleInit {
 
     const metrics = this.metricsService.getWeeklyMetrics();
     metrics.periodLabel = getWeekRangeLabel(new Date());
-    const pdfPath = await generatePDF(metrics);
 
-    try {
-      await this.mailService.sendReportEmail(pdfPath);
-    } finally {
-      if (fs.existsSync(pdfPath)) {
-        try {
-          fs.unlinkSync(pdfPath);
-        } catch (err: any) {
-          this.logger.warn(`No se pudo eliminar el archivo temporal ${pdfPath}: ${err?.message || err}`);
-        }
-      }
-    }
+    // pdfkit (y fontkit) solo se cargan cuando hay que generar el PDF.
+    const { generatePDF } = await import('./templates/pdf.template');
+    const pdf = await generatePDF(metrics);
+    await this.mailService.sendReportEmail(pdf);
 
     if (automatic) {
       // Sólo el envío automático cierra la semana y reinicia el acumulado.

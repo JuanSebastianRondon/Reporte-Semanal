@@ -12,7 +12,7 @@
     "deps:update": "npm update --save",
     "audit": "npm audit",
     "build": "tsc",
-    "build:windows": "powershell -Command \"Get-ChildItem clients/windows -Filter *.csproj -Recurse | ForEach-Object { dotnet build $_.FullName -c Release }\"",
+    "build:windows": "dotnet build clients/windows/ReporteSemanal.sln -c Release",
     "copy:windows": "powershell -ExecutionPolicy Bypass -File packaging/windows/copy-binaries.ps1",
     "version:check": "node scripts/check-version.js",
     "preview:pdf": "npm run build && node scripts/preview-pdf-palettes.js",

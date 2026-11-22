@@ -4,6 +4,7 @@ import * as path from 'path';
 
 export const API_TOKEN_HEADER = 'x-report-token';
 const TOKEN_FILE = '.token';
+const tokenCache = new Map<string, string>();
 
 /**
  * Devuelve el token local de la API. Se crea una única vez con permisos
@@ -11,11 +12,17 @@ const TOKEN_FILE = '.token';
  * Los clientes del mismo usuario lo leen de este archivo.
  */
 export function ensureApiToken(appDir: string): string {
+  const cached = tokenCache.get(appDir);
+  if (cached) return cached;
+
   const tokenPath = path.join(appDir, TOKEN_FILE);
 
   try {
     const existing = fs.readFileSync(tokenPath, 'utf-8').trim();
-    if (existing) return existing;
+    if (existing) {
+      tokenCache.set(appDir, existing);
+      return existing;
+    }
   } catch {
     // No existe o no es legible: se genera uno nuevo.
   }
@@ -28,12 +35,16 @@ export function ensureApiToken(appDir: string): string {
       mode: 0o600,
       flag: 'wx',
     });
+    tokenCache.set(appDir, token);
     return token;
   } catch (err: any) {
     // Otro proceso pudo crear el archivo en paralelo.
     if (err && err.code === 'EEXIST') {
       const existing = fs.readFileSync(tokenPath, 'utf-8').trim();
-      if (existing) return existing;
+      if (existing) {
+        tokenCache.set(appDir, existing);
+        return existing;
+      }
     }
     throw err;
   }

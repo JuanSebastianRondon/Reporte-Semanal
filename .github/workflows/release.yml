@@ -46,6 +46,13 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+      - name: Quitar source maps del paquete de release
+        shell: bash
+        run: find dist -name '*.map' -delete
+      # Quitar devDependencies antes de empaquetar: typescript, @types y
+      # ts-node suman ~26 MB y no se usan en runtime (get-windows conserva
+      # sus dependencias nativas porque son dependencies, no devDependencies).
+      - run: npm prune --omit=dev
       - run: npm run build:windows
       # El instalador toma los .exe de la raíz; hay que actualizarlos primero.
       - run: npm run copy:windows
@@ -81,23 +88,24 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.21'
-          cache: false
       - run: npm ci
       - run: npm run build
+      - name: Quitar source maps del paquete de release
+        run: find dist -name '*.map' -delete
+      - run: npm prune --omit=dev
       - name: Compilar clientes Go y empaquetar
         shell: bash
         env:
           RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
         run: |
           set -euo pipefail
-          mkdir -p release/linux/bin release/linux/packaging release/linux/clients
+          mkdir -p release/linux/bin release/linux/packaging
           cp -r dist release/linux/dist
           cp package.json .env.example release/linux/
           cp -r packaging/linux release/linux/packaging/linux
-          cp -r clients/linux release/linux/clients/linux
-          (cd clients/linux && go build -o ../../release/linux/bin/launcher ./cmd/launcher)
-          (cd clients/linux && go build -o ../../release/linux/bin/monitor ./cmd/tray)
-          (cd clients/linux && go build -o ../../release/linux/bin/config ./cmd/config)
+          GOFLAGS='-trimpath' go build -ldflags='-s -w' -o release/linux/bin/launcher ./clients/linux/cmd/launcher
+          GOFLAGS='-trimpath' go build -ldflags='-s -w' -o release/linux/bin/monitor ./clients/linux/cmd/tray
+          GOFLAGS='-trimpath' go build -ldflags='-s -w' -o release/linux/bin/config ./clients/linux/cmd/config
           tar -czf "release/reporte-semanal-${RELEASE_TAG}-linux.tar.gz" -C release/linux .
       - name: Subir bundle como artefacto
         uses: actions/upload-artifact@v4

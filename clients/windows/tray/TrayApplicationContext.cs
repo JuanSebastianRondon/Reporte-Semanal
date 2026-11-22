@@ -1,4 +1,5 @@
 using System;
+using System.Drawing;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
@@ -11,15 +12,19 @@ namespace ReporteTray
     {
         private const string ApiBaseUrl = "http://localhost:4577";
 
+        private static readonly JavaScriptSerializer Serializer = new JavaScriptSerializer();
+        private static readonly Icon WarningIcon = SystemIcons.Warning;
+
         private readonly NotifyIcon _trayIcon;
         private readonly Timer _pollTimer;
         private readonly HttpClient _http;
 
-        private readonly System.Drawing.Icon _appIcon;
+        private readonly Icon _appIcon;
+        private bool _polling;
 
         public TrayApplicationContext()
         {
-            _appIcon = System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath);
+            _appIcon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
 
             _http = ApiAuth.CreateHttpClient();
 
@@ -46,21 +51,28 @@ namespace ReporteTray
 
         private async Task PollStatusAsync()
         {
+            // Si el servicio tarda más de 5 s, se ignoran los ticks solapados;
+            // el siguiente tick recogerá el estado actual.
+            if (_polling) return;
+            _polling = true;
             try
             {
                 var response = await _http.GetStringAsync($"{ApiBaseUrl}/status");
-                var serializer = new JavaScriptSerializer();
-                var data = serializer.Deserialize<StatusResponse>(response);
+                var data = Serializer.Deserialize<StatusResponse>(response);
 
-                _trayIcon.Icon = _appIcon;
+                if (_trayIcon.Icon != _appIcon) _trayIcon.Icon = _appIcon;
                 _trayIcon.Text = TrimTooltip(
                     $"Esta semana: {data.weekTotal}\nÚltimo reporte: {data.lastReportSentAt ?? "sin enviar aún"}"
                 );
             }
             catch
             {
-                _trayIcon.Icon = System.Drawing.SystemIcons.Warning;
+                if (_trayIcon.Icon != WarningIcon) _trayIcon.Icon = WarningIcon;
                 _trayIcon.Text = "No se pudo conectar con el servicio";
+            }
+            finally
+            {
+                _polling = false;
             }
         }
 
@@ -87,8 +99,7 @@ namespace ReporteTray
             try
             {
                 var response = await _http.GetStringAsync($"{ApiBaseUrl}/app/data-folder");
-                var serializer = new JavaScriptSerializer();
-                var data = serializer.Deserialize<DataFolderResponse>(response);
+                var data = Serializer.Deserialize<DataFolderResponse>(response);
                 System.Diagnostics.Process.Start("explorer.exe", data.path);
             }
             catch

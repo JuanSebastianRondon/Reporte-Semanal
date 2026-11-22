@@ -1,6 +1,3 @@
-import * as fs from 'fs';
-import * as path from 'path';
-import * as os from 'os';
 import PDFDocument from 'pdfkit';
 import { WeeklyMetrics } from '../../metrics/metrics.service';
 import { getPdfPalette } from './pdf-palettes';
@@ -20,7 +17,8 @@ function extractWeek(label?: string): string {
   return match ? match[0] : '';
 }
 
-export function generatePDF(metrics: WeeklyMetrics): Promise<string> {
+/** Genera el PDF en memoria: evita escribir, releer y borrar un archivo temporal. */
+export function generatePDF(metrics: WeeklyMetrics): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const colors = getPdfPalette();
 
@@ -34,13 +32,10 @@ export function generatePDF(metrics: WeeklyMetrics): Promise<string> {
       },
     });
 
-    const dir = path.join(os.tmpdir(), 'ReporteSemanal');
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-
-    const filePath = path.join(dir, `report-${Date.now()}-${process.pid}.pdf`);
-    const stream = fs.createWriteStream(filePath);
-
-    doc.pipe(stream);
+    const chunks: Buffer[] = [];
+    doc.on('data', (chunk: Buffer) => chunks.push(Buffer.from(chunk)));
+    doc.on('end', () => resolve(Buffer.concat(chunks)));
+    doc.on('error', reject);
 
     const textRight = (
       value: string,
@@ -351,8 +346,5 @@ export function generatePDF(metrics: WeeklyMetrics): Promise<string> {
     }
 
     doc.end();
-
-    stream.on('finish', () => resolve(filePath));
-    stream.on('error', reject);
   });
 }

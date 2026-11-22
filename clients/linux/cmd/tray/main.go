@@ -24,14 +24,28 @@ func main() {
 	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
 
+	lastState := ""
 	check := func() {
 		resp, err := api.Request(client, http.MethodGet, "/status")
-		if err != nil || resp.StatusCode != http.StatusOK {
-			fmt.Println("[Monitor] Alerta: el backend no responde o rechazó el token.")
-			return
+		if resp != nil {
+			defer resp.Body.Close()
 		}
-		defer resp.Body.Close()
-		fmt.Println("[Monitor] Servicio activo.")
+		active := err == nil && resp != nil && resp.StatusCode == http.StatusOK
+
+		state := "alerta"
+		if active {
+			state = "activo"
+		}
+		// Solo se imprime cuando cambia el estado: evita llenar el journal
+		// con la misma línea cada 30 segundos.
+		if state != lastState {
+			if active {
+				fmt.Println("[Monitor] Servicio activo.")
+			} else {
+				fmt.Println("[Monitor] Alerta: el backend no responde o rechazó el token.")
+			}
+			lastState = state
+		}
 	}
 
 	check()
