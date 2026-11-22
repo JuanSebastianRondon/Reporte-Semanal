@@ -1,7 +1,7 @@
 [Setup]
 AppId={{61834A1B-73C4-479D-BD57-DB124D2F29A9}
 AppName=Reporte Semanal de Productividad
-AppVersion=2.0.3
+AppVersion=2.0.4
 AppPublisher=Juanse
 AppPublisherURL=https://github.com/JuanSebastianRondon/Reporte-Semanal
 AppSupportURL=https://github.com/JuanSebastianRondon/Reporte-Semanal
@@ -20,12 +20,12 @@ WizardStyle=modern
 Compression=lzma2
 SolidCompression=yes
 
-VersionInfoVersion=2.0.3.0
+VersionInfoVersion=2.0.4.0
 VersionInfoCompany=Juanse
 VersionInfoDescription=Instalador de Reporte Semanal de Productividad
 VersionInfoCopyright=Copyright (C) 2026 Juanse
 VersionInfoProductName=Reporte Semanal de Productividad
-VersionInfoProductVersion=2.0.3
+VersionInfoProductVersion=2.0.4
 
 [Files]
 ; Backend Node.js

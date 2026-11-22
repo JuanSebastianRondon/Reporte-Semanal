@@ -1,6 +1,6 @@
 {
   "name": "reporte_semanal",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "Aplicación multiplataforma que registra el tiempo de uso de aplicaciones y envía un reporte semanal en PDF por correo.",
   "main": "dist/main.js",
   "bin": "dist/main.js",

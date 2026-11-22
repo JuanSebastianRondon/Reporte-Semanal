@@ -1,4 +1,4 @@
-# Documentación Técnica - Reporte Semanal de Productividad (v2.0.3)
+# Documentación Técnica - Reporte Semanal de Productividad (v2.0.4)
 
 ---
 
