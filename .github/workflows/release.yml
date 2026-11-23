@@ -99,14 +99,19 @@ jobs:
           RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
         run: |
           set -euo pipefail
-          mkdir -p release/linux/bin release/linux/packaging
-          cp -r dist release/linux/dist
-          cp package.json .env.example release/linux/
-          cp -r packaging/linux release/linux/packaging/linux
-          GOFLAGS='-trimpath' go build -ldflags='-s -w' -o release/linux/bin/launcher ./clients/linux/cmd/launcher
-          GOFLAGS='-trimpath' go build -ldflags='-s -w' -o release/linux/bin/monitor ./clients/linux/cmd/tray
-          GOFLAGS='-trimpath' go build -ldflags='-s -w' -o release/linux/bin/config ./clients/linux/cmd/config
-          tar -czf "release/reporte-semanal-${RELEASE_TAG}-linux.tar.gz" -C release/linux .
+          ROOT="$PWD"
+          mkdir -p "$ROOT/release/linux/bin" "$ROOT/release/linux/packaging"
+          cp -r dist "$ROOT/release/linux/dist"
+          cp package.json .env.example "$ROOT/release/linux/"
+          cp -r packaging/linux "$ROOT/release/linux/packaging/linux"
+          # El módulo Go vive en clients/linux (ahí está el go.mod).
+          (
+            cd clients/linux
+            GOFLAGS='-trimpath' go build -ldflags='-s -w' -o "$ROOT/release/linux/bin/launcher" ./cmd/launcher
+            GOFLAGS='-trimpath' go build -ldflags='-s -w' -o "$ROOT/release/linux/bin/monitor" ./cmd/tray
+            GOFLAGS='-trimpath' go build -ldflags='-s -w' -o "$ROOT/release/linux/bin/config" ./cmd/config
+          )
+          tar -czf "$ROOT/release/reporte-semanal-${RELEASE_TAG}-linux.tar.gz" -C "$ROOT/release/linux" .
       - name: Subir bundle como artefacto
         uses: actions/upload-artifact@v4
         with:
